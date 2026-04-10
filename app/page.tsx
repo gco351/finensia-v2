@@ -68,7 +68,7 @@ const styles = `
 `;
 
 const FallingBackground = () => {
-  const [icons, setIcons] = useState([]);
+  const [icons, setIcons] = useState<any[]>([]);
 
   useEffect(() => {
     const iconTypes = ['dollar', 'calc', 'file', 'chart'];
@@ -107,25 +107,25 @@ const FallingBackground = () => {
 };
 
 export default function App() {
-  // PENTING: GANTI URL DI BAWAH INI DENGAN URL DEPLOYMENT YANG BARU DIBUAT BOS JIKA DIPERLUKAN
+  // PENTING: JIKA ANDA MEMILIKI URL BARU, SILAKAN GANTI DI BAWAH INI
   const GAS_URL = "https://script.google.com/macros/s/AKfycbyNuAHdIXhC0JRFJCsjxGJWxK211PqlPXdTNz8yApWpCTOWSAlNDStEy2T9b9WPBW2F/exec";
 
-  const [activeFAQ, setActiveFAQ] = useState(null);
+  const [activeFAQ, setActiveFAQ] = useState<number | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
   const [currentDocIndex, setCurrentDocIndex] = useState(0); 
 
-  // --- STATE DATA AWAL / CADANGAN ---
+  // --- STATE DATA FINAL ---
+  // Data ini akan menjadi data utama yang sangat rapi jika Google memblokir penarikan
   const [aboutImg, setAboutImg] = useState("");
-  const [videoUrl, setVideoUrl] = useState("https://www.youtube.com/embed/tgbNymZ7vqY");
+  const [videoUrl, setVideoUrl] = useState("https://www.youtube.com/embed/EJozdWEAdus"); // Video Default Finensia
   
-  // Penambahan property job: "" pada initial state agar TypeScript tidak error saat build
-  const [testimonials, setTestimonials] = useState([
+  const [testimonials, setTestimonials] = useState<any[]>([
     { name: "Rina Kartika", text: "Pembukuan usaha saya jadi jauh lebih rapi dan terorganisir.", role: "Business Owner", job: "" },
     { name: "Ahmad Fauzan", text: "Sekarang saya lebih paham akuntansi dan sudah dapat kerja.", role: "Alumni Kelas", job: "" },
     { name: "Dwi Santoso", text: "Timnya profesional dan sangat membantu kelancaran bisnis kami.", role: "CEO", job: "" }
   ]);
 
-  const [docs, setDocs] = useState([
+  const [docs, setDocs] = useState<any[]>([
     {
       img: "https://placehold.co/800x500/1e293b/f97316?text=Kelas+Tatap+Muka",
       title: "Pelatihan Akuntansi Batch 1",
@@ -135,84 +135,54 @@ export default function App() {
       img: "https://placehold.co/800x500/1e293b/f97316?text=Mentoring+Klien",
       title: "Sesi Mentoring & Setup ERP",
       desc: "Pendampingan intensif bersama pemilik UMKM untuk merancang sistem pencatatan yang efisien."
+    },
+    {
+      img: "https://placehold.co/800x500/1e293b/f97316?text=Webinar+Pajak",
+      title: "Webinar Tax Planning",
+      desc: "Berbagi insight mengenai strategi optimalisasi pajak yang aman dan sesuai regulasi bersama pelaku usaha."
     }
   ]);
 
-  const [team, setTeam] = useState([
-    { name: "Adhwa Neisya", role: "Accounting & Tax", job: "", img: "" },
-    { name: "Chelsea Hamid", role: "Tax Specialist", job: "", img: "" },
-    { name: "Lucas Abraham", role: "Accounting Specialist", job: "", img: "" }
+  const [team, setTeam] = useState<any[]>([
+    { name: "Adhwa Neisya", role: "Accounting & Tax", job: "Accounting & Tax", img: "" },
+    { name: "Chelsea Hamid", role: "Tax Specialist", job: "Tax Specialist", img: "" },
+    { name: "Lucas Abraham", role: "Accounting Specialist", job: "Accounting Specialist", img: "" }
   ]);
 
-  // --- LOGIKA SINKRONISASI DATABASE (Sangat Aman & Anti-Crash) ---
+  // --- LOGIKA SINKRONISASI DIAM-DIAM ---
   useEffect(() => {
     let isMounted = true;
 
     const fetchDatabase = async () => {
       try {
-        const targetUrl = GAS_URL.includes('?') ? `${GAS_URL}&t=${Date.now()}` : `${GAS_URL}?t=${Date.now()}`;
-        const response = await fetch(targetUrl);
-        
-        if (!response.ok) throw new Error("Gagal terhubung ke server Google.");
-        
-        // Membaca respon sebagai teks terlebih dahulu untuk menghindari crash jika diblokir
+        const response = await fetch(GAS_URL);
         const textResponse = await response.text(); 
+        const json = JSON.parse(textResponse);
         
-        try {
-          const json = JSON.parse(textResponse);
+        if (isMounted && json.status === 'success' && json.data) {
+          const d = json.data;
+          if (d['Tentang Kami'] && d['Tentang Kami'].image) setAboutImg(d['Tentang Kami'].image);
           
-          if (isMounted && json.status === 'success' && json.data) {
-            const d = json.data;
-            
-            if (d['Tentang Kami'] && d['Tentang Kami'].image) {
-               setAboutImg(d['Tentang Kami'].image);
-            }
-            
-            // Pembersih URL otomatis
-            if (d['Video Profil']) {
-              let rawUrl = "";
-              if (typeof d['Video Profil'] === 'object' && d['Video Profil'].url) {
-                 rawUrl = String(d['Video Profil'].url);
-              } else if (typeof d['Video Profil'] === 'string') {
-                 const match = d['Video Profil'].match(/https?:\/\/[^\s"\\]+/);
-                 if (match) rawUrl = match[0];
-                 else rawUrl = d['Video Profil'];
-              }
-
-              if (rawUrl) {
-                rawUrl = rawUrl.replace(/\\/g, "").split('"')[0].split(' ')[0]; 
-                if (rawUrl.includes('youtu.be/')) {
-                   rawUrl = rawUrl.replace('youtu.be/', 'www.youtube.com/embed/').split('?')[0];
-                } else if (rawUrl.includes('watch?v=')) {
-                   rawUrl = rawUrl.replace('watch?v=', 'embed/').split('&')[0];
-                }
-                setVideoUrl(rawUrl);
-              }
-            }
-            
-            if (d['Testimoni'] && Array.isArray(d['Testimoni']) && d['Testimoni'].length > 0) {
-              setTestimonials(d['Testimoni']);
-            }
-            if (d['Dokumentasi'] && Array.isArray(d['Dokumentasi']) && d['Dokumentasi'].length > 0) {
-              setDocs(d['Dokumentasi']);
-            }
-            if (d['Tim Praktisi'] && Array.isArray(d['Tim Praktisi']) && d['Tim Praktisi'].length > 0) {
-              setTeam(d['Tim Praktisi']);
-            }
+          if (d['Video Profil']) {
+            let rawUrl = typeof d['Video Profil'] === 'object' ? String(d['Video Profil'].url) : String(d['Video Profil']);
+            rawUrl = rawUrl.replace(/\\/g, "").split('"')[0].split(' ')[0]; 
+            if (rawUrl.includes('youtu.be/')) rawUrl = rawUrl.replace('youtu.be/', 'www.youtube.com/embed/').split('?')[0];
+            else if (rawUrl.includes('watch?v=')) rawUrl = rawUrl.replace('watch?v=', 'embed/').split('&')[0];
+            setVideoUrl(rawUrl);
           }
-        } catch (parseError) {
-          console.log("Akses Google Script tertahan sementara. Menjalankan versi lokal.");
+          
+          if (Array.isArray(d['Testimoni']) && d['Testimoni'].length > 0) setTestimonials(d['Testimoni']);
+          if (Array.isArray(d['Dokumentasi']) && d['Dokumentasi'].length > 0) setDocs(d['Dokumentasi']);
+          if (Array.isArray(d['Tim Praktisi']) && d['Tim Praktisi'].length > 0) setTeam(d['Tim Praktisi']);
         }
       } catch (error) {
-        console.log("Menjalankan versi lokal."); 
+        // Gagal Diam-diam: Tidak ada console.error lagi. 
+        // Biarkan website tetap berjalan cantik dengan data default di atas.
       }
     };
 
     fetchDatabase();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [GAS_URL]);
 
   const waNumber = "6281226523207"; 
@@ -236,17 +206,15 @@ export default function App() {
     if(docs.length > 0) setCurrentDocIndex((prev) => (prev === 0 ? docs.length - 1 : prev - 1));
   };
 
-  const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false);
-  };
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   // --- ANTI COPY/INSPECT ---
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: any) => {
       if ((e.ctrlKey || e.metaKey) && ['c', 'u', 's'].includes(e.key.toLowerCase())) e.preventDefault();
       if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'i')) e.preventDefault();
     };
-    const handleDragStart = (e) => e.preventDefault();
+    const handleDragStart = (e: any) => e.preventDefault();
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('dragstart', handleDragStart);
     return () => {
