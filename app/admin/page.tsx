@@ -227,14 +227,11 @@ export default function AdminDashboard() {
     }
   };
 
-  // ==========================================
-  // BUG FIX: TAMBAHKAN `as string` DI SINI
-  // ==========================================
   const handleAboutUpload = (e: any) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => setAboutImg(reader.result as string); // <--- FIX NYA DI SINI
+      reader.onloadend = () => setAboutImg(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
@@ -244,7 +241,7 @@ export default function AdminDashboard() {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        const resultString = reader.result as string; // <--- FIX NYA DI SINI JUGA
+        const resultString = reader.result as string; 
         if (type === 'doc') setDocs(docs.map(doc => doc.id === id ? { ...doc, img: resultString } : doc));
         else if (type === 'team') setTeam(team.map(t => t.id === id ? { ...t, img: resultString } : t));
       };
@@ -550,7 +547,8 @@ export default function AdminDashboard() {
                     </div>
                     <div className="mb-6">
                       <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Isi Testimoni</label>
-                      <textarea rows="3" value={testi.text} onChange={(e) => updateTesti(testi.id, 'text', e.target.value)} placeholder="Tuliskan ulasan klien di sini..." className="w-full p-3.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-orange-500 outline-none transition resize-none"></textarea>
+                      {/* FIX: MENGGUNAKAN KURUNG KURAWAL PADA ROWS={3} */}
+                      <textarea rows={3} value={testi.text} onChange={(e) => updateTesti(testi.id, 'text', e.target.value)} placeholder="Tuliskan ulasan klien di sini..." className="w-full p-3.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-orange-500 outline-none transition resize-none"></textarea>
                     </div>
                     <div className="flex justify-end pt-4 border-t border-slate-200">
                        <button onClick={() => deleteTesti(testi.id)} className="px-5 py-2.5 text-red-500 font-bold hover:bg-red-50 rounded-xl flex items-center justify-center gap-2 transition"><Trash2 size={16}/> Hapus Baris Ini</button>
@@ -605,7 +603,8 @@ export default function AdminDashboard() {
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Deskripsi Kegiatan</label>
-                          <textarea rows="3" value={doc.desc} onChange={(e) => updateDoc(doc.id, 'desc', e.target.value)} placeholder="Contoh: Berbagi insight mengenai..." className="w-full p-3.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-orange-500 outline-none transition resize-none"></textarea>
+                          {/* FIX: MENGGUNAKAN KURUNG KURAWAL PADA ROWS={3} */}
+                          <textarea rows={3} value={doc.desc} onChange={(e) => updateDoc(doc.id, 'desc', e.target.value)} placeholder="Contoh: Berbagi insight mengenai..." className="w-full p-3.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-orange-500 outline-none transition resize-none"></textarea>
                         </div>
                       </div>
                       <div className="flex justify-end pt-6 border-t border-slate-200 mt-6">
