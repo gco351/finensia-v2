@@ -51,11 +51,38 @@ const styles = `
     color: rgba(249, 115, 22, 0.4); /* Subtle Orange */
     z-index: 0;
   }
+
+  /* --- EFEK UI/UX TAMBAHAN --- */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-up {
+    animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .delay-100 { animation-delay: 150ms; }
+  .delay-200 { animation-delay: 300ms; }
+  
+  .hover-lift {
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+  .hover-lift:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 25px 50px -12px rgba(249, 115, 22, 0.3);
+    border-color: rgba(249, 115, 22, 0.4);
+  }
+  
+  .text-gradient {
+    background: linear-gradient(to right, #f97316, #fb923c, #f59e0b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
 `;
 
 // --- COMPONENT: ANIMATED BACKGROUND ---
 const FallingBackground = () => {
-  const [icons, setIcons] = useState([]);
+  const [icons, setIcons] = useState<any[]>([]);
 
   useEffect(() => {
     // Generate random icons
@@ -95,26 +122,28 @@ const FallingBackground = () => {
 };
 
 export default function App() {
-  const [activeFAQ, setActiveFAQ] = useState(null);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // State untuk menu HP
-  const [currentDocIndex, setCurrentDocIndex] = useState(0); // State untuk slider dokumentasi
+  // ==========================================
+  // CONFIGURATION URL DATABASE
+  // ==========================================
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbyNuAHdIXhC0JRFJCsjxGJWxK211PqlPXdTNz8yApWpCTOWSAlNDStEy2T9b9WPBW2F/exec";
 
-  // --- KONFIGURASI WHATSAPP ---
-  const waNumber = "6281226523207"; // Format nomor: 0 diubah jadi 62
-  const waLinkGeneral = `https://wa.me/${waNumber}?text=Halo%20Finensia,%20saya%20ingin%20berkonsultasi%20mengenai%20layanan%20dan%20jasa%20Anda.`;
-  const waLinkClass1 = `https://wa.me/${waNumber}?text=Halo%20Finensia,%20saya%20ingin%20daftar%20kelas%20Professional%20Accounting.`;
-  const waLinkClass2 = `https://wa.me/${waNumber}?text=Halo%20Finensia,%20saya%20ingin%20daftar%20kelas%20Accounting%20Intensive.`;
+  const [activeFAQ, setActiveFAQ] = useState<number | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
+  const [currentDocIndex, setCurrentDocIndex] = useState(0); 
 
-  const faqs = [
-    { q: "Apakah Finensia cocok untuk pemula?", a: "Ya, layanan kami dirancang untuk pemula hingga profesional." },
-    { q: "Apakah bisa untuk UMKM kecil?", a: "Bisa, justru UMKM adalah fokus utama kami." },
-    { q: "Apakah laporan keuangan sesuai standar?", a: "Ya, sesuai prinsip akuntansi yang berlaku." },
-    { q: "Apakah bisa konsultasi dulu?", a: "Bisa, Anda dapat diskusi sebelum menggunakan layanan." },
-    { q: "Apakah data saya aman?", a: "Kami menjaga kerahasiaan data klien secara profesional." }
-  ];
+  // ==========================================
+  // STATE DATA (Diisi dengan Data Bawaan / Fallback)
+  // ==========================================
+  const [aboutImg, setAboutImg] = useState("");
+  const [videoUrl, setVideoUrl] = useState("https://www.youtube.com/embed/tgbNymZ7vqY");
+  
+  const [testimonials, setTestimonials] = useState([
+    { name: "Rina Kartika", text: "Pembukuan usaha saya jadi jauh lebih rapi dan terorganisir.", role: "Business Owner" },
+    { name: "Ahmad Fauzan", text: "Sekarang saya lebih paham akuntansi dan sudah dapat kerja.", role: "Alumni Kelas" },
+    { name: "Dwi Santoso", text: "Timnya profesional dan sangat membantu kelancaran bisnis kami.", role: "CEO" }
+  ]);
 
-  // Data Dokumentasi
-  const dokumentasiData = [
+  const [docs, setDocs] = useState([
     {
       img: "https://placehold.co/800x500/1e293b/f97316?text=Kelas+Tatap+Muka",
       title: "Pelatihan Akuntansi Batch 1",
@@ -130,46 +159,91 @@ export default function App() {
       title: "Webinar Tax Planning",
       desc: "Berbagi insight mengenai strategi optimalisasi pajak yang aman dan sesuai regulasi bersama pelaku usaha."
     }
+  ]);
+
+  const [team, setTeam] = useState([
+    { name: "Adhwa Neisya", role: "Accounting & Tax", img: "" },
+    { name: "Chelsea Hamid", role: "Tax Specialist", img: "" },
+    { name: "Lucas Abraham", role: "Accounting Specialist", img: "" }
+  ]);
+
+  // ==========================================
+  // SINKRONISASI DATA KE GOOGLE SCRIPT
+  // ==========================================
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchDatabase = async () => {
+      try {
+        // Menggunakan mode cors dengan konfigurasi standar untuk mencegah preflight gagal
+        const response = await fetch(GAS_URL, {
+          method: 'GET',
+          redirect: 'follow',
+          cache: 'no-store' // Mencegah cache browser
+        });
+
+        if (!response.ok) throw new Error("Gagal terhubung ke database");
+        
+        const json = await response.json();
+        
+        if (isMounted && json.status === 'success' && json.data) {
+          const d = json.data;
+          // Timpa data statis dengan data dinamis JIKA datanya ada
+          if (d['Tentang Kami']?.image) setAboutImg(d['Tentang Kami'].image);
+          if (d['Video Profil']?.url) setVideoUrl(d['Video Profil'].url);
+          if (d['Testimoni'] && d['Testimoni'].length > 0) setTestimonials(d['Testimoni']);
+          if (d['Dokumentasi'] && d['Dokumentasi'].length > 0) setDocs(d['Dokumentasi']);
+          if (d['Tim Praktisi'] && d['Tim Praktisi'].length > 0) setTeam(d['Tim Praktisi']);
+        }
+      } catch (error) {
+        // Jika gagal tarik data, biarkan UI memakai data lokal/fallback
+        console.warn("Peringatan: Gagal sinkronisasi data dari Google Script. Menggunakan data cadangan lokal. Pastikan 'Who has access' diatur ke 'Anyone' saat deploy GAS.");
+      }
+    };
+
+    fetchDatabase();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // --- KONFIGURASI WHATSAPP ---
+  const waNumber = "6281226523207"; 
+  const waLinkGeneral = `https://wa.me/${waNumber}?text=Halo%20Finensia,%20saya%20ingin%20berkonsultasi%20mengenai%20layanan%20dan%20jasa%20Anda.`;
+  const waLinkClass1 = `https://wa.me/${waNumber}?text=Halo%20Finensia,%20saya%20ingin%20daftar%20kelas%20Professional%20Accounting.`;
+  const waLinkClass2 = `https://wa.me/${waNumber}?text=Halo%20Finensia,%20saya%20ingin%20daftar%20kelas%20Accounting%20Intensive.`;
+
+  const faqs = [
+    { q: "Apakah Finensia cocok untuk pemula?", a: "Ya, layanan kami dirancang untuk pemula hingga profesional." },
+    { q: "Apakah bisa untuk UMKM kecil?", a: "Bisa, justru UMKM adalah fokus utama kami." },
+    { q: "Apakah laporan keuangan sesuai standar?", a: "Ya, sesuai prinsip akuntansi yang berlaku." },
+    { q: "Apakah bisa konsultasi dulu?", a: "Bisa, Anda dapat diskusi sebelum menggunakan layanan." },
+    { q: "Apakah data saya aman?", a: "Kami menjaga kerahasiaan data klien secara profesional." }
   ];
 
   const nextDoc = () => {
-    setCurrentDocIndex((prev) => (prev === dokumentasiData.length - 1 ? 0 : prev + 1));
+    setCurrentDocIndex((prev) => (prev === docs.length - 1 ? 0 : prev + 1));
   };
 
   const prevDoc = () => {
-    setCurrentDocIndex((prev) => (prev === 0 ? dokumentasiData.length - 1 : prev - 1));
+    setCurrentDocIndex((prev) => (prev === 0 ? docs.length - 1 : prev - 1));
   };
 
-  // Fungsi untuk menutup menu HP saat link diklik
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
   };
 
   // --- FITUR KEAMANAN / ANTI-COPY ---
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      // Mencegah Ctrl+C / Cmd+C (Copy)
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
-        e.preventDefault();
-      }
-      // Mencegah Ctrl+U / Cmd+U (View Source)
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'u') {
-        e.preventDefault();
-      }
-      // Mencegah Ctrl+S / Cmd+S (Save Page)
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-        e.preventDefault();
-      }
-      // Mencegah F12 atau Ctrl+Shift+I / Cmd+Option+I (Developer Tools)
-      if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'i')) {
-        e.preventDefault();
-      }
+    const handleKeyDown = (e: any) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') e.preventDefault();
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'u') e.preventDefault();
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') e.preventDefault();
+      if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'i')) e.preventDefault();
     };
 
-    // Mencegah drag-and-drop elemen
-    const handleDragStart = (e) => {
-      e.preventDefault();
-    };
+    const handleDragStart = (e: any) => e.preventDefault();
 
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('dragstart', handleDragStart);
@@ -185,14 +259,12 @@ export default function App() {
       className="min-h-screen bg-slate-50 font-inter text-slate-800 select-none"
       onContextMenu={(e) => e.preventDefault()}
     >
-      {/* Menambahkan "select-none" untuk mencegah blok teks dan onContextMenu untuk blok klik kanan */}
       <style>{styles}</style>
       
       {/* NAVBAR */}
       <nav className="fixed w-full z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-6">
           <div className="h-20 flex items-center justify-between">
-            {/* Logo */}
             <div className="flex items-center gap-2">
               <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
                 <TrendingUp className="text-white" size={24} />
@@ -200,7 +272,6 @@ export default function App() {
               <span className="text-2xl font-bold text-white tracking-tight font-jakarta">Finensia.</span>
             </div>
 
-            {/* Desktop Menu */}
             <div className="hidden md:flex space-x-8 text-slate-300">
               <a href="#tentang" className="hover:text-orange-500 transition">Tentang</a>
               <a href="#layanan" className="hover:text-orange-500 transition">Layanan</a>
@@ -217,7 +288,6 @@ export default function App() {
               Hubungi Kami
             </a>
 
-            {/* Mobile Menu Button (Hamburger) */}
             <button 
               className="md:hidden text-white p-2"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -227,7 +297,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Mobile Dropdown Menu */}
         {isMobileMenuOpen && (
           <div className="md:hidden bg-slate-900 border-b border-slate-800 px-6 py-4">
             <div className="flex flex-col space-y-4 text-slate-300">
@@ -254,24 +323,24 @@ export default function App() {
         <FallingBackground />
         
         <div className="max-w-7xl mx-auto px-6 relative z-10 text-center mt-10 md:mt-0">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800/50 border border-slate-700 text-orange-400 mb-8 text-sm md:text-base">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800/50 border border-slate-700 text-orange-400 mb-8 text-sm md:text-base animate-fade-up">
             <span className="flex h-2 w-2 rounded-full bg-orange-500 animate-pulse"></span>
             Partner Keuangan Bisnis Anda
           </div>
           
-          <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold text-white tracking-tight mb-8 leading-tight">
-            Transformasi <span className="text-orange-500">Keuangan</span><br/> Bisnis Anda.
+          <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold text-white tracking-tight mb-8 leading-tight animate-fade-up delay-100">
+            Transformasi <span className="text-gradient">Keuangan</span><br/> Bisnis Anda.
           </h1>
           
-          <p className="text-lg md:text-xl text-slate-300 mb-12 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-xl text-slate-300 mb-12 max-w-2xl mx-auto leading-relaxed animate-fade-up delay-200">
             Solusi akuntansi dan perpajakan terpadu untuk percepatan skala bisnis Anda. Rapi, efisien, dan terstruktur.
           </p>
           
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a href="#layanan" className="w-full sm:w-auto px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-full font-semibold transition flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-up delay-200">
+            <a href="#layanan" className="w-full sm:w-auto px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-full font-semibold transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25">
               Solusi Kami <ArrowRight size={20} />
             </a>
-            <a href="#kelas" className="w-full sm:w-auto px-8 py-4 bg-transparent border border-slate-600 hover:bg-slate-800 text-white rounded-full font-semibold transition flex items-center justify-center gap-2">
+            <a href="#kelas" className="w-full sm:w-auto px-8 py-4 bg-transparent border border-slate-600 hover:bg-slate-800 text-white rounded-full font-semibold transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
               Academy <BookOpen size={20} />
             </a>
           </div>
@@ -302,10 +371,14 @@ export default function App() {
             <div className="relative order-1 lg:order-2 mb-8 lg:mb-0">
               <div className="aspect-square bg-slate-100 rounded-3xl overflow-hidden relative">
                  <div className="absolute inset-0 bg-gradient-to-tr from-slate-900 to-slate-800 opacity-10"></div>
-                 {/* Placeholder for real image */}
-                 <div className="w-full h-full flex items-center justify-center bg-slate-200">
-                    <ShieldCheck size={100} className="text-slate-400 md:w-32 md:h-32" />
-                 </div>
+                 {/* FOTO DINAMIS DARI DATABASE */}
+                 {aboutImg ? (
+                   <img src={aboutImg} alt="Tentang Kami" className="w-full h-full object-cover" />
+                 ) : (
+                   <div className="w-full h-full flex items-center justify-center bg-slate-200">
+                      <ShieldCheck size={100} className="text-slate-400 md:w-32 md:h-32" />
+                   </div>
+                 )}
               </div>
               <div className="absolute -bottom-4 -left-4 md:-bottom-6 md:-left-6 bg-orange-500 p-6 md:p-8 rounded-2xl shadow-xl text-white">
                 <h3 className="text-2xl md:text-3xl font-bold mb-1">100+</h3>
@@ -329,8 +402,8 @@ export default function App() {
 
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
             {/* Service 1 */}
-            <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm hover:shadow-xl transition-shadow border border-slate-100">
-              <div className="w-14 h-14 bg-blue-50 text-slate-900 rounded-2xl flex items-center justify-center mb-6">
+            <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 hover-lift group cursor-default">
+              <div className="w-14 h-14 bg-blue-50 text-slate-900 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-slate-900 group-hover:text-white transition-colors duration-500">
                 <BookOpen size={28} />
               </div>
               <h3 className="text-xl md:text-2xl font-bold mb-4 text-slate-900">Pembukuan & Jurnal</h3>
@@ -344,8 +417,8 @@ export default function App() {
             </div>
 
             {/* Service 2 */}
-            <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm hover:shadow-xl transition-shadow border border-slate-100">
-              <div className="w-14 h-14 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center mb-6">
+            <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 hover-lift group cursor-default">
+              <div className="w-14 h-14 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-500 group-hover:text-white transition-colors duration-500">
                 <FileText size={28} />
               </div>
               <h3 className="text-xl md:text-2xl font-bold mb-4 text-slate-900">Pelaporan SPT & Pajak</h3>
@@ -359,8 +432,8 @@ export default function App() {
             </div>
 
             {/* Service 3 */}
-            <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm hover:shadow-xl transition-shadow border border-slate-100 sm:col-span-2 md:col-span-1">
-              <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center mb-6">
+            <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 sm:col-span-2 md:col-span-1 hover-lift group cursor-default">
+              <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-500 transition-colors duration-500">
                 <Calculator size={28} />
               </div>
               <h3 className="text-xl md:text-2xl font-bold mb-4 text-slate-900">Setup ERP & Sistem</h3>
@@ -389,7 +462,7 @@ export default function App() {
 
           <div className="grid md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto">
             {/* Class 1 */}
-            <div className="bg-slate-800 rounded-3xl p-6 md:p-10 border border-slate-700 relative overflow-hidden">
+            <div className="bg-slate-800 rounded-3xl p-6 md:p-10 border border-slate-700 relative overflow-hidden hover-lift flex flex-col">
               <div className="absolute top-0 right-0 bg-orange-500 text-white text-xs font-bold px-4 py-1 rounded-bl-xl uppercase tracking-wider">
                 Paling Diminati
               </div>
@@ -420,14 +493,14 @@ export default function App() {
                 href={waLinkClass1}
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="block text-center w-full py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold transition"
+                className="block text-center w-full py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold transition-all hover:scale-105 active:scale-95 mt-auto shadow-lg shadow-orange-500/20"
               >
                 Daftar Sekarang
               </a>
             </div>
 
             {/* Class 2 */}
-            <div className="bg-slate-800/50 rounded-3xl p-6 md:p-10 border border-slate-700/50 hover:border-slate-600 transition flex flex-col">
+            <div className="bg-slate-800/50 rounded-3xl p-6 md:p-10 border border-slate-700/50 transition-all flex flex-col hover-lift">
               <h3 className="text-xl md:text-2xl font-bold mb-2">Accounting Intensive</h3>
               <p className="text-slate-400 mb-6 md:mb-8 text-sm md:text-base">Belajar dari nol hingga bisa membuat laporan keuangan.</p>
               
@@ -448,7 +521,7 @@ export default function App() {
                 href={waLinkClass2}
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="block text-center w-full py-4 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-bold transition mt-auto"
+                className="block text-center w-full py-4 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-bold transition-all hover:scale-105 active:scale-95 mt-auto"
               >
                 Daftar Sekarang
               </a>
@@ -457,76 +530,70 @@ export default function App() {
         </div>
       </section>
 
-      {/* DOKUMENTASI (Slider Kecil) */}
-      <section className="py-16 md:py-20 bg-slate-100 border-b border-slate-200">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between mb-10 text-center md:text-left gap-4">
-            <div>
-              <h4 className="text-orange-500 font-bold mb-2 uppercase tracking-wider text-sm flex items-center justify-center md:justify-start gap-2">
-                <Camera size={16} /> Dokumentasi
-              </h4>
-              <h2 className="text-2xl md:text-3xl font-bold text-slate-900">Momen & Kegiatan Kami</h2>
-            </div>
-            
-            {/* Navigasi Button */}
-            <div className="flex gap-2">
-              <button 
-                onClick={prevDoc}
-                className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition shadow-sm"
-                aria-label="Previous"
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <button 
-                onClick={nextDoc}
-                className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition shadow-sm"
-                aria-label="Next"
-              >
-                <ChevronRight size={20} />
-              </button>
-            </div>
-          </div>
-
-          {/* Slider Container - Dibuat max-w-2xl agar tidak kebesaran */}
-          <div className="max-w-2xl mx-auto">
-            <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 transition-all duration-300">
-              {/* Gambar (Pakai Placeholder sementara) */}
-              <img 
-                src={dokumentasiData[currentDocIndex].img} 
-                alt={dokumentasiData[currentDocIndex].title}
-                className="w-full h-56 md:h-72 object-cover bg-slate-200"
-                draggable="false"
-              />
+      {/* DOKUMENTASI DINAMIS DARI GOOGLE SCRIPT */}
+      {docs && docs.length > 0 && (
+        <section className="py-16 md:py-20 bg-slate-100 border-b border-slate-200">
+          <div className="max-w-4xl mx-auto px-6">
+            <div className="flex flex-col md:flex-row items-center justify-between mb-10 text-center md:text-left gap-4">
+              <div>
+                <h4 className="text-orange-500 font-bold mb-2 uppercase tracking-wider text-sm flex items-center justify-center md:justify-start gap-2">
+                  <Camera size={16} /> Dokumentasi
+                </h4>
+                <h2 className="text-2xl md:text-3xl font-bold text-slate-900">Momen & Kegiatan Kami</h2>
+              </div>
               
-              {/* Deskripsi */}
-              <div className="p-6 md:p-8">
-                <h3 className="text-xl font-bold text-slate-900 mb-2 font-jakarta">
-                  {dokumentasiData[currentDocIndex].title}
-                </h3>
-                <p className="text-slate-600 text-sm md:text-base leading-relaxed">
-                  {dokumentasiData[currentDocIndex].desc}
-                </p>
+              <div className="flex gap-2">
+                <button 
+                  onClick={prevDoc}
+                  className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-orange-500 hover:text-white transition shadow-sm"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <button 
+                  onClick={nextDoc}
+                  className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-orange-500 hover:text-white transition shadow-sm"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div className="max-w-2xl mx-auto">
+              <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 transition-all duration-300">
+                <img 
+                  src={docs[currentDocIndex]?.img || "https://placehold.co/800x500/1e293b/f97316?text=Gambar+Kosong"} 
+                  alt={docs[currentDocIndex]?.title}
+                  className="w-full h-56 md:h-72 object-cover bg-slate-200"
+                  draggable="false"
+                />
                 
-                {/* Dots Indicator */}
-                <div className="flex gap-2 mt-6 justify-center">
-                  {dokumentasiData.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setCurrentDocIndex(idx)}
-                      className={`h-2 rounded-full transition-all ${
-                        idx === currentDocIndex ? "w-8 bg-orange-500" : "w-2 bg-slate-300 hover:bg-slate-400"
-                      }`}
-                      aria-label={`Go to slide ${idx + 1}`}
-                    />
-                  ))}
+                <div className="p-6 md:p-8">
+                  <h3 className="text-xl font-bold text-slate-900 mb-2 font-jakarta">
+                    {docs[currentDocIndex]?.title}
+                  </h3>
+                  <p className="text-slate-600 text-sm md:text-base leading-relaxed">
+                    {docs[currentDocIndex]?.desc}
+                  </p>
+                  
+                  <div className="flex gap-2 mt-6 justify-center">
+                    {docs.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrentDocIndex(idx)}
+                        className={`h-2 rounded-full transition-all ${
+                          idx === currentDocIndex ? "w-8 bg-orange-500" : "w-2 bg-slate-300 hover:bg-slate-400"
+                        }`}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* VIDEO PROFIL (Kecil) */}
+      {/* VIDEO PROFIL DINAMIS DARI GOOGLE SCRIPT */}
       <section className="py-12 md:py-16 bg-slate-50 border-b border-slate-200">
         <div className="max-w-2xl mx-auto px-6 text-center">
           <h4 className="text-orange-500 font-bold mb-2 uppercase tracking-wider text-sm flex items-center justify-center gap-2">
@@ -534,16 +601,13 @@ export default function App() {
           </h4>
           <h2 className="text-2xl font-bold mb-8 font-jakarta text-slate-900">Lebih Dekat dengan Finensia</h2>
           
-          {/* Container Video (Kecil, max-w-2xl) */}
           <div className="aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-slate-200 bg-slate-800 relative z-10">
-            {/* GANTI URL DI BAWAH INI DENGAN LINK EMBED YOUTUBE ANDA */}
             <iframe 
               width="100%" 
               height="100%" 
-              src="https://www.youtube.com/embed/tgbNymZ7vqY" 
+              src={videoUrl} 
               title="Video Profil Finensia" 
               frameBorder="0" 
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
               allowFullScreen
               className="w-full h-full"
             ></iframe>
@@ -551,75 +615,75 @@ export default function App() {
         </div>
       </section>
 
-      {/* TESTIMONI */}
-      <section className="py-20 md:py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
-            <h4 className="text-orange-500 font-bold mb-2 uppercase tracking-wider text-sm">Testimoni</h4>
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6">Cerita dari Klien Kami</h2>
-            <p className="text-slate-600 text-base md:text-lg">
-              Kepercayaan klien adalah prioritas kami. Finensia telah membantu berbagai pelaku usaha merapikan keuangannya.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6 md:gap-8">
-            {[
-              { name: "Rina Kartika", text: "Pembukuan usaha saya jadi jauh lebih rapi dan terorganisir.", role: "Business Owner" },
-              { name: "Ahmad Fauzan", text: "Sekarang saya lebih paham akuntansi dan sudah dapat kerja.", role: "Alumni Kelas" },
-              { name: "Dwi Santoso", text: "Timnya profesional dan sangat membantu kelancaran bisnis kami.", role: "CEO" }
-            ].map((testi, i) => (
-              <div key={i} className="bg-slate-50 p-6 md:p-8 rounded-3xl border border-slate-100">
-                <div className="flex gap-1 text-orange-500 mb-4 md:mb-6">
-                  {[...Array(5)].map((_, j) => <Star key={j} size={16} className="md:w-[18px] md:h-[18px]" fill="currentColor" />)}
-                </div>
-                <p className="text-slate-700 italic mb-6 text-base md:text-lg">"{testi.text}"</p>
-                <div>
-                  <h5 className="font-bold text-slate-900">{testi.name}</h5>
-                  <p className="text-sm text-slate-500">{testi.role}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* TIM PRAKTISI */}
-      <section id="tim" className="py-20 md:py-24 bg-slate-900 text-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid lg:grid-cols-2 gap-12 md:gap-16 items-center">
-            <div>
-              <h4 className="text-orange-500 font-bold mb-2 uppercase tracking-wider text-sm">Tim Kami</h4>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">Tim Praktisi Ahli.</h2>
-              <p className="text-slate-400 text-base md:text-lg mb-6 leading-relaxed">
-                Di balik Finensia, kami mendedikasikan keahlian untuk membantu pelaku bisnis dan calon akuntan memahami dunia keuangan tanpa rasa takut.
+      {/* TESTIMONI DINAMIS DARI GOOGLE SCRIPT */}
+      {testimonials && testimonials.length > 0 && (
+        <section className="py-20 md:py-24 bg-white">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
+              <h4 className="text-orange-500 font-bold mb-2 uppercase tracking-wider text-sm">Testimoni</h4>
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6">Cerita dari Klien Kami</h2>
+              <p className="text-slate-600 text-base md:text-lg">
+                Kepercayaan klien adalah prioritas kami. Finensia telah membantu berbagai pelaku usaha merapikan keuangannya.
               </p>
-              <div className="bg-slate-800 p-6 rounded-2xl border-l-4 border-orange-500 mb-8 md:mb-0">
-                <p className="italic text-slate-300 text-sm md:text-base">
-                  "Bagi kami, akuntansi bukan sekadar angka, melainkan sistem yang membantu bisnis bertahan dan berkembang."
-                </p>
-              </div>
             </div>
-            
-            <div className="grid gap-4">
-               {[
-                 { name: "Adhwa Neisya", role: "Accounting & Tax" },
-                 { name: "Chelsea Hamid", role: "Tax Specialist" },
-                 { name: "Lucas Abraham", role: "Accounting Specialist" }
-               ].map((member, i) => (
-                 <div key={i} className="flex items-center gap-4 md:gap-6 bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
-                   <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
-                     <Users className="text-slate-400 w-6 h-6 md:w-8 md:h-8" />
-                   </div>
-                   <div>
-                     <h4 className="font-bold text-base md:text-lg text-white">{member.name}</h4>
-                     <p className="text-orange-400 text-sm md:text-base">{member.role}</p>
-                   </div>
-                 </div>
-               ))}
+
+            <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+              {testimonials.map((testi, i) => (
+                <div key={i} className="bg-slate-50 p-6 md:p-8 rounded-3xl border border-slate-100 hover-lift flex flex-col justify-between">
+                  <div className="flex gap-1 text-orange-500 mb-4 md:mb-6">
+                    {[...Array(5)].map((_, j) => <Star key={j} size={16} className="md:w-[18px] md:h-[18px]" fill="currentColor" />)}
+                  </div>
+                  <p className="text-slate-700 italic mb-6 text-base md:text-lg">"{testi.text}"</p>
+                  <div>
+                    <h5 className="font-bold text-slate-900">{testi.name}</h5>
+                    <p className="text-sm text-slate-500">{testi.role}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
+      {/* TIM PRAKTISI DINAMIS DARI GOOGLE SCRIPT */}
+      {team && team.length > 0 && (
+        <section id="tim" className="py-20 md:py-24 bg-slate-900 text-white">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="grid lg:grid-cols-2 gap-12 md:gap-16 items-center">
+              <div>
+                <h4 className="text-orange-500 font-bold mb-2 uppercase tracking-wider text-sm">Tim Kami</h4>
+                <h2 className="text-3xl md:text-4xl font-bold mb-6">Tim Praktisi Ahli.</h2>
+                <p className="text-slate-400 text-base md:text-lg mb-6 leading-relaxed">
+                  Di balik Finensia, kami mendedikasikan keahlian untuk membantu pelaku bisnis dan calon akuntan memahami dunia keuangan tanpa rasa takut.
+                </p>
+                <div className="bg-slate-800 p-6 rounded-2xl border-l-4 border-orange-500 mb-8 md:mb-0">
+                  <p className="italic text-slate-300 text-sm md:text-base">
+                    "Bagi kami, akuntansi bukan sekadar angka, melainkan sistem yang membantu bisnis bertahan dan berkembang."
+                  </p>
+                </div>
+              </div>
+              
+              <div className="grid gap-4">
+                 {team.map((member, i) => (
+                   <div key={i} className="flex items-center gap-4 md:gap-6 bg-slate-800/50 p-4 rounded-2xl border border-slate-700 hover-lift cursor-default group">
+                     <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0 overflow-hidden border border-slate-600 group-hover:border-orange-500 transition-colors">
+                       {member.img ? (
+                         <img src={member.img} className="w-full h-full object-cover" alt={member.name} />
+                       ) : (
+                         <Users className="text-slate-400 w-6 h-6 md:w-8 md:h-8 group-hover:text-orange-400 transition-colors" />
+                       )}
+                     </div>
+                     <div>
+                       <h4 className="font-bold text-base md:text-lg text-white">{member.name}</h4>
+                       <p className="text-orange-400 text-sm md:text-base">{member.job || member.role}</p>
+                     </div>
+                   </div>
+                 ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* FAQ */}
       <section className="py-20 md:py-24 bg-slate-50">
