@@ -2,802 +2,578 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
+  Calculator, 
+  CircleDollarSign, 
+  FileText, 
   TrendingUp, 
-  ImagePlus, 
-  MessageSquare, 
-  Video, 
-  Users, 
-  Monitor, 
-  Save, 
-  Upload, 
-  Plus, 
-  Trash2,
-  AlertCircle,
+  BookOpen, 
+  CheckCircle2, 
+  ChevronDown, 
+  ChevronUp,
+  Star,
+  ArrowRight,
+  ShieldCheck,
+  Users,
   Menu,
   X,
-  CheckCircle2,
-  Lock,
-  User,
-  Key,
-  ShieldAlert,
-  LogOut,
-  UserPlus,
-  Loader2
+  ChevronLeft,
+  ChevronRight,
+  Camera, 
+  PlaySquare 
 } from 'lucide-react';
 
-// --- CUSTOM STYLES ---
+// --- CUSTOM CSS FOR ANIMATIONS & FONTS ---
 const styles = `
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
-  .font-inter { font-family: 'Inter', sans-serif; }
-  .font-jakarta { font-family: 'Plus Jakarta Sans', sans-serif; }
-  
-  .no-scrollbar::-webkit-scrollbar { display: none; }
-  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
 
-  @keyframes slideIn {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 6rem;
   }
-  .animate-slide-in { animation: slideIn 0.3s ease-out forwards; }
-  
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+
+  .font-inter {
+    font-family: 'Inter', sans-serif;
   }
-  .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
-  
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+
+  h1, h2, h3, h4, h5, h6, .font-jakarta {
+    font-family: 'Plus Jakarta Sans', sans-serif;
   }
-  .animate-spin-slow { animation: spin 2s linear infinite; }
+
+  @keyframes fall {
+    0% { transform: translateY(-10vh) rotate(0deg); opacity: 0; }
+    10% { opacity: 0.6; }
+    90% { opacity: 0.6; }
+    100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+  }
+  .falling-icon {
+    position: absolute;
+    animation: fall linear infinite;
+    color: rgba(249, 115, 22, 0.4); 
+    z-index: 0;
+  }
 `;
 
-export default function AdminDashboard() {
-  // ==========================================
-  // URL GOOGLE APPS SCRIPT (SUDAH FIX)
-  // ==========================================
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbwiiBGWqYItwBQ5818pj7Y3uK04YIuYfLJzSUtvc0m82f5XJ6AoxUWBcbC9XWqwM7Pi/exec"; 
+const FallingBackground = () => {
+  const [icons, setIcons] = useState<any[]>([]);
 
-  const [isMounted, setIsMounted] = useState(false);
-
-  // --- STATE LOGIN & SECURITY ---
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [loginUsername, setLoginUsername] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
-  const [failedAttempts, setFailedAttempts] = useState(0);
-  const [isLocked, setIsLocked] = useState(false);
-  const [lockTimeRemaining, setLockTimeRemaining] = useState(0);
-
-  // --- STATE DASHBOARD NAV & NOTIF ---
-  const [activeTab, setActiveTab] = useState('about');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [notification, setNotification] = useState<any>(null); 
-  const [isSaving, setIsSaving] = useState(false);
-
-  // --- STATE KONTEN (Mock Data) ---
-  const [aboutImg, setAboutImg] = useState("https://placehold.co/600x600/1e293b/f97316?text=Foto+Tentang+Kami");
-  const [testimonials, setTestimonials] = useState([
-    { id: 1, name: 'Rina Kartika', role: 'Business Owner', text: 'Pembukuan usaha saya jadi jauh lebih rapi dan terorganisir.' }
-  ]);
-  const [docs, setDocs] = useState([
-    { id: 1, title: 'Webinar Tax Planning', desc: 'Berbagi insight mengenai strategi.', img: 'https://placehold.co/800x500/1e293b/f97316?text=Dokumentasi+1' }
-  ]);
-  const [videoUrl, setVideoUrl] = useState("https://www.youtube.com/embed/tgbNymZ7vqY");
-  const [team, setTeam] = useState([
-    { id: 1, name: 'Adhwa Neisya', job: 'Tax/Accounting', img: 'https://placehold.co/200x200/1e293b/f97316?text=Foto+Praktisi' }
-  ]);
-  const [adminUsers, setAdminUsers] = useState([
-    { id: 1, username: 'admin', name: 'Adhwa Neisya', role: 'Super Admin', email: 'adhwa@finensia.com' }
-  ]);
-
-  // ==========================================
-  // LAYER 1 & 4: INIT SECURITY & SESSION CHECK
-  // ==========================================
   useEffect(() => {
-    setIsMounted(true);
-
-    const auth = sessionStorage.getItem('finensia_admin_auth');
-    if (auth === 'true') setIsLoggedIn(true);
-
-    const lockUntil = localStorage.getItem('finensia_lockout_time');
-    if (lockUntil) {
-      const now = new Date().getTime();
-      if (now < parseInt(lockUntil)) {
-        setIsLocked(true);
-        setLockTimeRemaining(Math.ceil((parseInt(lockUntil) - now) / 60000));
-      } else {
-        localStorage.removeItem('finensia_lockout_time');
-        localStorage.removeItem('finensia_failed_attempts');
-      }
-    }
-
-    const attempts = localStorage.getItem('finensia_failed_attempts');
-    if (attempts) setFailedAttempts(parseInt(attempts));
+    const iconTypes = ['dollar', 'calc', 'file', 'chart'];
+    const newIcons = Array.from({ length: 20 }).map((_, i) => ({
+      id: i,
+      type: iconTypes[Math.floor(Math.random() * iconTypes.length)],
+      left: `${Math.random() * 100}%`,
+      animationDuration: `${Math.random() * 5 + 5}s`, 
+      animationDelay: `${Math.random() * 5}s`,
+      size: Math.random() * 20 + 20, 
+    }));
+    setIcons(newIcons);
   }, []);
 
-  // ==========================================
-  // LAYER 2: ANTI-INSPECT ELEMENT 
-  // ==========================================
-  useEffect(() => {
-    if (isLoggedIn || !isMounted) return;
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {icons.map((icon) => (
+        <div
+          key={icon.id}
+          className="falling-icon"
+          style={{
+            left: icon.left,
+            animationDuration: icon.animationDuration,
+            animationDelay: icon.animationDelay,
+            fontSize: `${icon.size}px`
+          }}
+        >
+          {icon.type === 'dollar' && <CircleDollarSign size={icon.size} />}
+          {icon.type === 'calc' && <Calculator size={icon.size} />}
+          {icon.type === 'file' && <FileText size={icon.size} />}
+          {icon.type === 'chart' && <TrendingUp size={icon.size} />}
+        </div>
+      ))}
+    </div>
+  );
+};
 
+export default function App() {
+  // ==========================================
+  // GANTI DENGAN URL GOOGLE SCRIPT ANDA DI SINI
+  // ==========================================
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbxfrHUsm6AQ6d3DLf23CalI1DiM6_lTRMHst-_EYdGmPtv8VGNUr88NqU0s3fZQdm3t/exec"; 
+
+  const [activeFAQ, setActiveFAQ] = useState<number | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
+  const [currentDocIndex, setCurrentDocIndex] = useState(0); 
+  
+  // --- STATE DATA DINAMIS DARI GOOGLE SCRIPT ---
+  const [aboutImg, setAboutImg] = useState("");
+  const [videoUrl, setVideoUrl] = useState("https://www.youtube.com/embed/tgbNymZ7vqY");
+  
+  const [testimonialsData, setTestimonialsData] = useState([
+    { name: "Memuat Data...", text: "Sedang mengambil data dari server...", role: "Loading" }
+  ]);
+  
+  const [dokumentasiData, setDokumentasiData] = useState([
+    { img: "https://placehold.co/800x500/1e293b/f97316?text=Loading...", title: "Memuat Data...", desc: "Mohon tunggu sebentar." }
+  ]);
+
+  const [teamData, setTeamData] = useState([
+    { name: "Memuat Tim...", role: "Loading", img: "" }
+  ]);
+
+  // MENGAMBIL DATA DARI GOOGLE SCRIPT SAAT HALAMAN DIBUKA
+  useEffect(() => {
+    fetch(GAS_URL)
+      .then(res => res.json())
+      .then(json => {
+        if (json.status === 'success' && json.data) {
+          if (json.data['Testimoni'] && json.data['Testimoni'].length > 0) setTestimonialsData(json.data['Testimoni']);
+          if (json.data['Dokumentasi'] && json.data['Dokumentasi'].length > 0) setDokumentasiData(json.data['Dokumentasi']);
+          if (json.data['Tim Praktisi'] && json.data['Tim Praktisi'].length > 0) setTeamData(json.data['Tim Praktisi']);
+          if (json.data['Video Profil'] && json.data['Video Profil'].url) setVideoUrl(json.data['Video Profil'].url);
+          if (json.data['Tentang Kami'] && json.data['Tentang Kami'].image) setAboutImg(json.data['Tentang Kami'].image);
+        }
+      })
+      .catch(err => console.error("Gagal mengambil data database:", err));
+  }, []);
+
+  const waNumber = "6281226523207";
+  const waLinkGeneral = `https://wa.me/${waNumber}?text=Halo%20Finensia,%20saya%20ingin%20berkonsultasi%20mengenai%20layanan%20dan%20jasa%20Anda.`;
+  const waLinkClass1 = `https://wa.me/${waNumber}?text=Halo%20Finensia,%20saya%20ingin%20daftar%20kelas%20Professional%20Accounting.`;
+  const waLinkClass2 = `https://wa.me/${waNumber}?text=Halo%20Finensia,%20saya%20ingin%20daftar%20kelas%20Accounting%20Intensive.`;
+
+  const faqs = [
+    { q: "Apakah Finensia cocok untuk pemula?", a: "Ya, layanan kami dirancang untuk pemula hingga profesional." },
+    { q: "Apakah bisa untuk UMKM kecil?", a: "Bisa, justru UMKM adalah fokus utama kami." },
+    { q: "Apakah laporan keuangan sesuai standar?", a: "Ya, sesuai prinsip akuntansi yang berlaku." },
+    { q: "Apakah bisa konsultasi dulu?", a: "Bisa, Anda dapat diskusi sebelum menggunakan layanan." },
+    { q: "Apakah data saya aman?", a: "Kami menjaga kerahasiaan data klien secara profesional." }
+  ];
+
+  const nextDoc = () => setCurrentDocIndex((prev) => (prev === dokumentasiData.length - 1 ? 0 : prev + 1));
+  const prevDoc = () => setCurrentDocIndex((prev) => (prev === 0 ? dokumentasiData.length - 1 : prev - 1));
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
+  useEffect(() => {
     const handleKeyDown = (e: any) => {
-      if (e.key === 'F12' || 
-         (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'i') || 
-         (e.ctrlKey && e.key.toLowerCase() === 'u') || 
-         (e.metaKey && e.altKey && e.key.toLowerCase() === 'i')) {
-        e.preventDefault();
-        setLoginError("Akses Developer Tools dilarang untuk alasan keamanan!");
-      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') e.preventDefault();
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'u') e.preventDefault();
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') e.preventDefault();
+      if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'i')) e.preventDefault();
     };
-    
-    const handleContextMenu = (e: any) => e.preventDefault();
+    const handleDragStart = (e: any) => e.preventDefault();
 
     document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('dragstart', handleDragStart);
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('dragstart', handleDragStart);
     };
-  }, [isLoggedIn, isMounted]);
+  }, []);
 
-  // ==========================================
-  // FUNGSI LOGIN & LOCKOUT
-  // ==========================================
-  const handleLogin = (e: any) => {
-    e.preventDefault();
-    setLoginError('');
+  return (
+    <div 
+      className="min-h-screen bg-slate-50 font-inter text-slate-800 select-none"
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      <style>{styles}</style>
+      
+      {/* NAVBAR */}
+      <nav className="fixed w-full z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="h-20 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
+                <TrendingUp className="text-white" size={24} />
+              </div>
+              <span className="text-2xl font-bold text-white tracking-tight font-jakarta">Finensia.</span>
+            </div>
 
-    if (isLocked) {
-      setLoginError(`Akun terkunci sementara. Coba lagi dalam ${lockTimeRemaining} menit.`);
-      return;
-    }
+            <div className="hidden md:flex space-x-8 text-slate-300">
+              <a href="#tentang" className="hover:text-orange-500 transition">Tentang</a>
+              <a href="#layanan" className="hover:text-orange-500 transition">Layanan</a>
+              <a href="#kelas" className="hover:text-orange-500 transition">Kelas</a>
+              <a href="#tim" className="hover:text-orange-500 transition">Tim</a>
+            </div>
+            
+            <a 
+              href={waLinkGeneral}
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hidden md:block bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-full font-medium transition shadow-lg shadow-orange-500/20"
+            >
+              Hubungi Kami
+            </a>
 
-    const secretUser = btoa(loginUsername);
-    const secretPass = btoa(loginPassword);
+            <button 
+              className="md:hidden text-white p-2"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+            </button>
+          </div>
+        </div>
 
-    if (secretUser === 'YWRtaW4=' && secretPass === 'YWRtaW4xMjM=') {
-      setIsLoggedIn(true);
-      sessionStorage.setItem('finensia_admin_auth', 'true');
-      setFailedAttempts(0);
-      localStorage.removeItem('finensia_failed_attempts');
-    } else {
-      const newAttempts = failedAttempts + 1;
-      setFailedAttempts(newAttempts);
-      localStorage.setItem('finensia_failed_attempts', newAttempts.toString());
-
-      if (newAttempts >= 3) {
-        const lockTime = new Date().getTime() + 15 * 60000;
-        localStorage.setItem('finensia_lockout_time', lockTime.toString());
-        setIsLocked(true);
-        setLockTimeRemaining(15);
-        setLoginError('Terlalu banyak percobaan! Akses dikunci selama 15 menit.');
-      } else {
-        setLoginError(`Username atau Password salah! (Percobaan ${newAttempts}/3)`);
-      }
-    }
-  };
-
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    sessionStorage.removeItem('finensia_admin_auth');
-    setLoginUsername('');
-    setLoginPassword('');
-  };
-
-  // ==========================================
-  // FUNGSI SIMPAN KE GOOGLE SCRIPT
-  // ==========================================
-  const showNotification = (message: string, type = 'success') => {
-    setNotification({ message, type });
-    if (type !== 'loading') {
-      setTimeout(() => setNotification(null), 3000);
-    }
-  };
-
-  const handleSave = async (section: string, payloadData: any) => {
-    setIsSaving(true);
-    showNotification(`Menyimpan data [${section}] ke database...`, 'loading');
-
-    try {
-      const response = await fetch(GAS_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ action: "updateData", section: section, data: payloadData })
-      });
-
-      if (response.ok) {
-        showNotification(`Perubahan pada [${section}] berhasil disimpan!`, 'success');
-      } else {
-        throw new Error("Gagal terhubung ke server");
-      }
-    } catch (error) {
-      console.error(error);
-      showNotification(`Terjadi kesalahan saat menyimpan [${section}].`, 'error');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleAboutUpload = (e: any) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setAboutImg(reader.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleArrayImageUpload = (e: any, id: number, type: string) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const resultString = reader.result as string; 
-        if (type === 'doc') setDocs(docs.map(doc => doc.id === id ? { ...doc, img: resultString } : doc));
-        else if (type === 'team') setTeam(team.map(t => t.id === id ? { ...t, img: resultString } : t));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const updateTesti = (id: number, field: string, value: string) => setTestimonials(testimonials.map(t => t.id === id ? { ...t, [field]: value } : t));
-  const addTesti = () => setTestimonials([{ id: Date.now(), name: '', role: '', text: '' }, ...testimonials]);
-  const deleteTesti = (id: number) => setTestimonials(testimonials.filter(t => t.id !== id));
-
-  const updateDoc = (id: number, field: string, value: string) => setDocs(docs.map(d => d.id === id ? { ...d, [field]: value } : d));
-  const addDoc = () => setDocs([{ id: Date.now(), title: '', desc: '', img: 'https://placehold.co/800x500/1e293b/f97316?text=Upload+Foto' }, ...docs]);
-  const deleteDoc = (id: number) => setDocs(docs.filter(d => d.id !== id));
-
-  const updateTeam = (id: number, field: string, value: string) => setTeam(team.map(t => t.id === id ? { ...t, [field]: value } : t));
-  const addTeam = () => setTeam([{ id: Date.now(), name: '', job: '', img: 'https://placehold.co/200x200/1e293b/f97316?text=Upload+Foto' }, ...team]);
-  const deleteTeam = (id: number) => setTeam(team.filter(t => t.id !== id));
-
-  const updateAdminUser = (id: number, field: string, value: string) => setAdminUsers(adminUsers.map(a => a.id === id ? { ...a, [field]: value } : a));
-  const addAdminUser = () => setAdminUsers([{ id: Date.now(), username: '', name: '', role: 'Editor', email: '' }, ...adminUsers]);
-  const deleteAdminUser = (id: number) => setAdminUsers(adminUsers.filter(a => a.id !== id));
-
-  const menuItems = [
-    { id: 'about', icon: ImagePlus, label: '1. Tentang Kami' },
-    { id: 'testi', icon: MessageSquare, label: '2. Testimoni' },
-    { id: 'doc', icon: ImagePlus, label: '3. Dokumentasi' },
-    { id: 'video', icon: Video, label: '4. Video Profil' },
-    { id: 'team', icon: Users, label: '5. Praktisi' },
-    { id: 'admins', icon: UserPlus, label: '6. Kelola Admin' },
-  ];
-
-  if (!isMounted) return null;
-
-  // ==========================================
-  // TAMPILAN LOGIN SCREEN
-  // ==========================================
-  if (!isLoggedIn) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6 font-inter relative overflow-hidden select-none">
-        <style>{styles}</style>
-        
-        <div className="absolute top-[-20%] left-[-10%] w-96 h-96 bg-orange-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-20"></div>
-        <div className="absolute bottom-[-20%] right-[-10%] w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-[128px] opacity-20"></div>
-
-        <div className="w-full max-w-md bg-slate-950/80 backdrop-blur-xl border border-slate-800 rounded-[2.5rem] p-10 shadow-2xl animate-fade-in relative z-10">
-          <div className="flex justify-center mb-8">
-            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg transition-colors ${isLocked ? 'bg-red-500 shadow-red-500/20' : 'bg-orange-500 shadow-orange-500/20'}`}>
-              {isLocked ? <ShieldAlert className="text-white" size={32} /> : <Lock className="text-white" size={32} />}
+        {isMobileMenuOpen && (
+          <div className="md:hidden bg-slate-900 border-b border-slate-800 px-6 py-4">
+            <div className="flex flex-col space-y-4 text-slate-300">
+              <a href="#tentang" onClick={closeMobileMenu} className="hover:text-orange-500 transition py-2 border-b border-slate-800">Tentang Kami</a>
+              <a href="#layanan" onClick={closeMobileMenu} className="hover:text-orange-500 transition py-2 border-b border-slate-800">Layanan</a>
+              <a href="#kelas" onClick={closeMobileMenu} className="hover:text-orange-500 transition py-2 border-b border-slate-800">Kelas</a>
+              <a href="#tim" onClick={closeMobileMenu} className="hover:text-orange-500 transition py-2 border-b border-slate-800">Tim Praktisi</a>
+              <a 
+                href={waLinkGeneral}
+                target="_blank" 
+                rel="noopener noreferrer"
+                onClick={closeMobileMenu}
+                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-full font-medium transition w-full mt-4 text-center inline-block"
+              >
+                Hubungi Kami
+              </a>
             </div>
           </div>
+        )}
+      </nav>
+
+      {/* HERO SECTION */}
+      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 bg-slate-900 overflow-hidden flex items-center min-h-[90vh]">
+        <FallingBackground />
+        
+        <div className="max-w-7xl mx-auto px-6 relative z-10 text-center mt-10 md:mt-0">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800/50 border border-slate-700 text-orange-400 mb-8 text-sm md:text-base">
+            <span className="flex h-2 w-2 rounded-full bg-orange-500 animate-pulse"></span>
+            Partner Keuangan Bisnis Anda
+          </div>
           
-          <h1 className="text-3xl font-bold text-center text-white font-jakarta mb-2">Secure Admin</h1>
-          <p className="text-slate-400 text-center text-sm mb-8">
-            {isLocked ? `Sistem terkunci. Tunggu ${lockTimeRemaining} menit.` : 'Masuk dengan kredensial yang sah'}
+          <h1 className="text-4xl md:text-5xl lg:text-7xl font-extrabold text-white tracking-tight mb-8 leading-tight">
+            Transformasi <span className="text-orange-500">Keuangan</span><br/> Bisnis Anda.
+          </h1>
+          
+          <p className="text-lg md:text-xl text-slate-300 mb-12 max-w-2xl mx-auto leading-relaxed">
+            Solusi akuntansi dan perpajakan terpadu untuk percepatan skala bisnis Anda. Rapi, efisien, dan terstruktur.
           </p>
+          
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <a href="#layanan" className="w-full sm:w-auto px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-full font-semibold transition flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25">
+              Solusi Kami <ArrowRight size={20} />
+            </a>
+            <a href="#kelas" className="w-full sm:w-auto px-8 py-4 bg-transparent border border-slate-600 hover:bg-slate-800 text-white rounded-full font-semibold transition flex items-center justify-center gap-2">
+              Academy <BookOpen size={20} />
+            </a>
+          </div>
+        </div>
+      </section>
 
-          {loginError && (
-            <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl mb-6 flex items-center gap-3 text-sm font-medium animate-slide-in">
-              <ShieldAlert size={20} className="flex-shrink-0" /> <span className="leading-tight">{loginError}</span>
+      {/* TENTANG KAMI */}
+      <section id="tentang" className="py-20 md:py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid lg:grid-cols-2 gap-12 md:gap-16 items-center">
+            <div className="order-2 lg:order-1">
+              <h4 className="text-orange-500 font-bold mb-2 uppercase tracking-wider text-sm">Tentang Kami</h4>
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6 leading-tight">
+                Mitra Strategis untuk Keuangan & Pajak Bisnis Anda
+              </h2>
+              <div className="space-y-4 text-slate-600 text-base md:text-lg leading-relaxed">
+                <p>
+                  <strong>Finensia</strong> hadir sebagai layanan di bidang akuntansi dan perpajakan yang membantu individu dan pelaku usaha dalam mengelola keuangan secara lebih rapi, efisien, dan terstruktur.
+                </p>
+                <p>
+                  Kami percaya bahwa keuangan yang tertata bukan hanya kewajiban, tetapi fondasi penting untuk pertumbuhan bisnis. Oleh karena itu, kami menghadirkan layanan yang mudah dipahami, aplikatif, dan relevan dengan kebutuhan bisnis saat ini.
+                </p>
+                <p>
+                  Dengan pendekatan yang praktis, Finensia membantu Anda dalam pembukuan, pengelolaan administrasi pajak, hingga peningkatan pemahaman finansial secara menyeluruh.
+                </p>
+              </div>
             </div>
-          )}
+            <div className="relative order-1 lg:order-2 mb-8 lg:mb-0">
+              <div className="aspect-square bg-slate-100 rounded-3xl overflow-hidden relative border border-slate-200 shadow-sm">
+                 {/* FOTO TENTANG KAMI DINAMIS */}
+                 {aboutImg ? (
+                   <img src={aboutImg} alt="Tentang Finensia" className="w-full h-full object-cover" />
+                 ) : (
+                   <div className="w-full h-full flex flex-col items-center justify-center bg-slate-100">
+                      <ShieldCheck size={80} className="text-slate-300" />
+                   </div>
+                 )}
+              </div>
+              <div className="absolute -bottom-4 -left-4 md:-bottom-6 md:-left-6 bg-orange-500 p-6 md:p-8 rounded-2xl shadow-xl text-white border-4 border-white">
+                <h3 className="text-2xl md:text-3xl font-bold mb-1">100+</h3>
+                <p className="text-orange-100 text-sm md:text-base font-medium">Klien Terbantu</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-          <form onSubmit={handleLogin} className="space-y-5">
+      {/* LAYANAN INTRO & DETAILS */}
+      <section id="layanan" className="py-20 md:py-24 bg-slate-50">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
+            <h4 className="text-orange-500 font-bold mb-2 uppercase tracking-wider text-sm">Layanan Kami</h4>
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6">Solusi Keuangan & Pajak yang Efisien</h2>
+            <p className="text-slate-600 text-base md:text-lg">
+              Mulai dari pembukuan, administrasi pajak, hingga penyusunan laporan, kami menjaga kerapihan finansial bisnis Anda.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
+            <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm hover:shadow-xl transition-shadow border border-slate-100">
+              <div className="w-14 h-14 bg-blue-50 text-slate-900 rounded-2xl flex items-center justify-center mb-6">
+                <BookOpen size={28} />
+              </div>
+              <h3 className="text-xl md:text-2xl font-bold mb-4 text-slate-900">Pembukuan & Jurnal</h3>
+              <p className="text-slate-600 mb-6">Pencatatan transaksi keuangan secara rapi dan sesuai standar.</p>
+              <div className="pt-6 border-t border-slate-100 mt-auto">
+                <p className="text-sm text-slate-500 mb-1">Mulai dari</p>
+                <p className="text-xl font-bold text-orange-500">Rp 2.000.000</p>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm hover:shadow-xl transition-shadow border border-slate-100">
+              <div className="w-14 h-14 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center mb-6">
+                <FileText size={28} />
+              </div>
+              <h3 className="text-xl md:text-2xl font-bold mb-4 text-slate-900">Pelaporan SPT & Pajak</h3>
+              <p className="text-slate-600 mb-6">Pelaporan pajak tepat waktu, diskusi langsung untuk strategi pajak yang efisien.</p>
+              <div className="pt-6 border-t border-slate-100">
+                <p className="text-sm text-slate-500 mb-1">Mulai dari</p>
+                <p className="text-xl font-bold text-orange-500">Rp 500.000</p>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm hover:shadow-xl transition-shadow border border-slate-100 sm:col-span-2 md:col-span-1">
+              <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center mb-6">
+                <Calculator size={28} />
+              </div>
+              <h3 className="text-xl md:text-2xl font-bold mb-4 text-slate-900">Setup ERP & Sistem</h3>
+              <p className="text-slate-600 mb-6">Menyusun struktur akun, merancang alur transaksi dan SOP keuangan terintegrasi.</p>
+              <div className="pt-6 border-t border-slate-100">
+                <p className="text-sm text-slate-500 mb-1">Mulai dari</p>
+                <p className="text-xl font-bold text-orange-500">Rp 1.000.000</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* KELAS / ACADEMY */}
+      <section id="kelas" className="py-20 md:py-24 bg-slate-900 text-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
+            <h4 className="text-orange-500 font-bold mb-2 uppercase tracking-wider text-sm">Academy</h4>
+            <h2 className="text-3xl md:text-4xl font-bold mb-6">Tingkatkan Skill Akuntansi Anda</h2>
+            <p className="text-slate-400 text-base md:text-lg">
+              Program pembelajaran dirancang sistematis, berbasis praktik nyata, dan mudah dipahami untuk kebutuhan kerja maupun bisnis.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto">
+            <div className="bg-slate-800 rounded-3xl p-6 md:p-10 border border-slate-700 relative overflow-hidden">
+              <div className="absolute top-0 right-0 bg-orange-500 text-white text-xs font-bold px-4 py-1 rounded-bl-xl uppercase tracking-wider">Paling Diminati</div>
+              <h3 className="text-xl md:text-2xl font-bold mb-2 pr-24">Professional Accounting</h3>
+              <p className="text-slate-400 mb-6 md:mb-8 text-sm md:text-base">Program lengkap untuk siap kerja dan memahami akuntansi secara praktik.</p>
+              <div className="mb-8">
+                <p className="text-slate-500 line-through mb-1">Rp 1.200.000</p>
+                <p className="text-3xl md:text-4xl font-extrabold text-orange-500">Rp 599.000</p>
+              </div>
+              <ul className="space-y-3 md:space-y-4 mb-8">
+                {['Basic Accounting', 'Accounting Plus', 'Pajak Dasar', 'Laporan Keuangan', 'Studi kasus', 'Diskusi & mentoring'].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-slate-300 text-sm md:text-base">
+                    <CheckCircle2 size={18} className="text-orange-500 flex-shrink-0 md:w-5 md:h-5" /> {item}
+                  </li>
+                ))}
+              </ul>
+              <a href={waLinkClass1} target="_blank" rel="noopener noreferrer" className="block text-center w-full py-4 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold transition">Daftar Sekarang</a>
+            </div>
+
+            <div className="bg-slate-800/50 rounded-3xl p-6 md:p-10 border border-slate-700/50 hover:border-slate-600 transition flex flex-col">
+              <h3 className="text-xl md:text-2xl font-bold mb-2">Accounting Intensive</h3>
+              <p className="text-slate-400 mb-6 md:mb-8 text-sm md:text-base">Belajar dari nol hingga bisa membuat laporan keuangan.</p>
+              <div className="mb-8">
+                <p className="text-slate-500 line-through mb-1">Rp 600.000</p>
+                <p className="text-3xl md:text-4xl font-extrabold text-white">Rp 299.000</p>
+              </div>
+              <ul className="space-y-3 md:space-y-4 mb-10">
+                {['Basic Accounting', 'Accounting Plus', 'Laporan Keuangan', 'Studi kasus', 'Diskusi mentor'].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-slate-300 text-sm md:text-base">
+                    <CheckCircle2 size={18} className="text-slate-500 flex-shrink-0 md:w-5 md:h-5" /> {item}
+                  </li>
+                ))}
+              </ul>
+              <a href={waLinkClass2} target="_blank" rel="noopener noreferrer" className="block text-center w-full py-4 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-bold transition mt-auto">Daftar Sekarang</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* DOKUMENTASI DINAMIS */}
+      <section className="py-16 md:py-20 bg-slate-100 border-b border-slate-200">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row items-center justify-between mb-10 text-center md:text-left gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Username</label>
-              <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-                <input 
-                  type="text" 
-                  value={loginUsername}
-                  onChange={(e) => setLoginUsername(e.target.value)}
-                  disabled={isLocked}
-                  placeholder="Masukkan username" 
-                  className="w-full pl-12 pr-4 py-4 bg-slate-900 border border-slate-700 rounded-xl text-white font-medium focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition disabled:opacity-50 disabled:cursor-not-allowed"
-                  required
-                />
+              <h4 className="text-orange-500 font-bold mb-2 uppercase tracking-wider text-sm flex items-center justify-center md:justify-start gap-2">
+                <Camera size={16} /> Dokumentasi
+              </h4>
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-900">Momen & Kegiatan Kami</h2>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={prevDoc} className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition shadow-sm"><ChevronLeft size={20} /></button>
+              <button onClick={nextDoc} className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition shadow-sm"><ChevronRight size={20} /></button>
+            </div>
+          </div>
+
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 transition-all duration-300">
+              {dokumentasiData[currentDocIndex] && (
+                <>
+                  <img src={dokumentasiData[currentDocIndex].img} alt="Dokumentasi" className="w-full h-56 md:h-72 object-cover bg-slate-200" draggable="false" />
+                  <div className="p-6 md:p-8">
+                    <h3 className="text-xl font-bold text-slate-900 mb-2 font-jakarta">{dokumentasiData[currentDocIndex].title}</h3>
+                    <p className="text-slate-600 text-sm md:text-base leading-relaxed">{dokumentasiData[currentDocIndex].desc}</p>
+                    
+                    <div className="flex gap-2 mt-6 justify-center">
+                      {dokumentasiData.map((_, idx) => (
+                        <button key={idx} onClick={() => setCurrentDocIndex(idx)} className={`h-2 rounded-full transition-all ${idx === currentDocIndex ? "w-8 bg-orange-500" : "w-2 bg-slate-300 hover:bg-slate-400"}`} />
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* VIDEO PROFIL DINAMIS */}
+      <section className="py-12 md:py-16 bg-slate-50 border-b border-slate-200">
+        <div className="max-w-2xl mx-auto px-6 text-center">
+          <h4 className="text-orange-500 font-bold mb-2 uppercase tracking-wider text-sm flex items-center justify-center gap-2">
+            <PlaySquare size={16} /> Profil Video
+          </h4>
+          <h2 className="text-2xl font-bold mb-8 font-jakarta text-slate-900">Lebih Dekat dengan Finensia</h2>
+          <div className="aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-slate-200 bg-slate-800 relative z-10">
+            <iframe width="100%" height="100%" src={videoUrl} title="Video Profil" frameBorder="0" allowFullScreen className="w-full h-full"></iframe>
+          </div>
+        </div>
+      </section>
+
+      {/* TESTIMONI DINAMIS */}
+      <section className="py-20 md:py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
+            <h4 className="text-orange-500 font-bold mb-2 uppercase tracking-wider text-sm">Testimoni</h4>
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6">Cerita dari Klien Kami</h2>
+            <p className="text-slate-600 text-base md:text-lg">Kepercayaan klien adalah prioritas kami. Finensia telah membantu berbagai pelaku usaha merapikan keuangannya.</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+            {testimonialsData.map((testi: any, i: number) => (
+              <div key={i} className="bg-slate-50 p-6 md:p-8 rounded-3xl border border-slate-100 shadow-sm">
+                <div className="flex gap-1 text-orange-500 mb-4 md:mb-6">
+                  {[...Array(5)].map((_, j) => <Star key={j} size={16} fill="currentColor" />)}
+                </div>
+                <p className="text-slate-700 italic mb-6 text-base md:text-lg">"{testi.text}"</p>
+                <div>
+                  <h5 className="font-bold text-slate-900">{testi.name}</h5>
+                  <p className="text-sm text-slate-500">{testi.role}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* TIM PRAKTISI DINAMIS */}
+      <section id="tim" className="py-20 md:py-24 bg-slate-900 text-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid lg:grid-cols-2 gap-12 md:gap-16 items-center">
+            <div>
+              <h4 className="text-orange-500 font-bold mb-2 uppercase tracking-wider text-sm">Tim Kami</h4>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">Tim Praktisi Ahli.</h2>
+              <p className="text-slate-400 text-base md:text-lg mb-6 leading-relaxed">
+                Di balik Finensia, kami mendedikasikan keahlian untuk membantu pelaku bisnis dan calon akuntan memahami dunia keuangan tanpa rasa takut.
+              </p>
+              <div className="bg-slate-800 p-6 rounded-2xl border-l-4 border-orange-500 mb-8 md:mb-0">
+                <p className="italic text-slate-300 text-sm md:text-base">
+                  "Bagi kami, akuntansi bukan sekadar angka, melainkan sistem yang membantu bisnis bertahan dan berkembang."
+                </p>
               </div>
             </div>
             
-            <div>
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Password</label>
-              <div className="relative">
-                <Key className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
-                <input 
-                  type="password" 
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  disabled={isLocked}
-                  placeholder="••••••••" 
-                  className="w-full pl-12 pr-4 py-4 bg-slate-900 border border-slate-700 rounded-xl text-white font-medium focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition disabled:opacity-50 disabled:cursor-not-allowed"
-                  required
-                />
-              </div>
+            <div className="grid gap-4">
+               {teamData.map((member: any, i: number) => (
+                 <div key={i} className="flex items-center gap-4 md:gap-6 bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
+                   <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-slate-700 overflow-hidden flex items-center justify-center flex-shrink-0">
+                     {member.img ? <img src={member.img} alt={member.name} className="w-full h-full object-cover"/> : <Users className="text-slate-400 w-6 h-6" />}
+                   </div>
+                   <div>
+                     <h4 className="font-bold text-base md:text-lg text-white">{member.name}</h4>
+                     <p className="text-orange-400 text-sm md:text-base">{member.role || member.job}</p>
+                   </div>
+                 </div>
+               ))}
             </div>
-
-            <button 
-              type="submit" 
-              disabled={isLocked}
-              className="w-full py-4 mt-4 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold transition shadow-lg shadow-orange-500/20 disabled:bg-slate-700 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed"
-            >
-              {isLocked ? 'Akses Terkunci' : 'Masuk Dashboard'}
-            </button>
-          </form>
-          
-          <div className="mt-8 pt-6 border-t border-slate-800 text-center flex items-center justify-center gap-2 text-xs text-slate-500">
-            <CheckCircle2 size={14} className="text-emerald-500" /> Dilindungi oleh Finensia Security Layer
           </div>
         </div>
-      </div>
-    );
-  }
+      </section>
 
-  // ==========================================
-  // TAMPILAN DASHBOARD UTAMA
-  // ==========================================
-  return (
-    <div className="min-h-screen bg-slate-50 flex font-inter text-slate-800 relative overflow-x-hidden animate-fade-in">
-      <style>{styles}</style>
-
-      {/* TOAST NOTIFICATION */}
-      {notification && (
-        <div className={`fixed top-6 right-6 z-[100] text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-slide-in border-l-4 
-          ${notification.type === 'error' ? 'bg-red-900 border-red-500' : 'bg-slate-900 border-orange-500'}`}>
-          {notification.type === 'loading' ? (
-            <Loader2 className="text-orange-500 animate-spin-slow" size={24} />
-          ) : notification.type === 'error' ? (
-            <ShieldAlert className="text-red-500" size={24} />
-          ) : (
-            <CheckCircle2 className="text-orange-500" size={24} />
-          )}
-          <p className="font-medium text-sm">{notification.message}</p>
-        </div>
-      )}
-
-      {/* SIDEBAR DESKTOP */}
-      <aside className="hidden md:flex w-72 bg-slate-950 text-slate-400 flex-col fixed h-full shadow-2xl z-20">
-        <div className="p-8 flex items-center gap-3 border-b border-slate-800">
-          <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-orange-500/20">
-            <TrendingUp className="text-white" size={24} />
+      {/* FAQ & FOOTER */}
+      <section className="py-20 md:py-24 bg-slate-50">
+        <div className="max-w-3xl mx-auto px-6">
+          <div className="text-center mb-12 md:mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6">Pertanyaan Umum</h2>
           </div>
-          <span className="text-2xl font-bold text-white font-jakarta tracking-tight">Finensia<span className="text-orange-500">.</span></span>
-        </div>
-
-        <nav className="flex-1 p-6 space-y-2 overflow-y-auto no-scrollbar">
-          <p className="text-xs font-bold uppercase tracking-widest text-slate-600 mb-4 px-4">Menu Kontrol Website</p>
-          {menuItems.map((item) => (
-            <button 
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all ${
-                activeTab === item.id 
-                ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20 font-bold' 
-                : 'hover:bg-slate-800 hover:text-white font-medium'
-              }`}
-            >
-              <item.icon size={20} /> <span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-
-        <div className="p-6 border-t border-slate-800 space-y-3">
-           <a href="/" target="_blank" className="flex items-center justify-center gap-2 p-3.5 bg-slate-800 rounded-xl text-white hover:bg-slate-700 transition font-bold text-sm">
-              <Monitor size={18} /> Lihat Website
-           </a>
-           <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 p-3.5 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 hover:bg-red-500 hover:text-white transition font-bold text-sm">
-              <LogOut size={18} /> Keluar
-           </button>
-        </div>
-      </aside>
-
-      {/* HEADER MOBILE */}
-      <div className="md:hidden fixed top-0 w-full bg-slate-950 text-white p-4 flex items-center justify-between z-50 shadow-lg">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-            <TrendingUp size={16} />
-          </div>
-          <span className="text-xl font-bold font-jakarta">Finensia Admin</span>
-        </div>
-        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 hover:bg-slate-800 rounded-lg">
-          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </div>
-
-      {/* MENU MOBILE DROPDOWN */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden fixed top-16 w-full bg-slate-900 z-40 border-b border-slate-800 shadow-xl overflow-y-auto max-h-[80vh]">
-          <div className="p-4 flex flex-col gap-2">
-            {menuItems.map((item) => (
-              <button 
-                key={item.id}
-                onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }}
-                className={`flex items-center gap-3 p-4 rounded-xl ${activeTab === item.id ? 'bg-orange-500 text-white font-bold' : 'text-slate-400 font-medium'}`}
-              >
-                <item.icon size={20} /> {item.label}
-              </button>
+          <div className="space-y-4">
+            {faqs.map((faq, index) => (
+              <div key={index} className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                <button className="w-full px-5 md:px-6 py-4 md:py-5 text-left flex justify-between items-center font-bold text-slate-800 text-sm md:text-base" onClick={() => setActiveFAQ(activeFAQ === index ? null : index)}>
+                  <span className="pr-4">{faq.q}</span>
+                  {activeFAQ === index ? <ChevronUp className="text-orange-500 flex-shrink-0" /> : <ChevronDown className="text-slate-400 flex-shrink-0" />}
+                </button>
+                {activeFAQ === index && <div className="px-5 md:px-6 pb-4 md:pb-5 text-slate-600 border-t border-slate-100 pt-4 text-sm md:text-base">{faq.a}</div>}
+              </div>
             ))}
-            <div className="border-t border-slate-800 mt-2 pt-4 px-2">
-              <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 p-4 bg-red-500/10 text-red-400 rounded-xl font-bold">
-                <LogOut size={18} /> Keluar (Logout)
-              </button>
-            </div>
           </div>
         </div>
-      )}
+      </section>
 
-      {/* MAIN CONTENT AREA */}
-      <main className="flex-1 md:ml-72 p-6 md:p-10 pt-24 md:pt-10 max-w-5xl">
-        <header className="flex flex-col md:flex-row md:justify-between md:items-end gap-4 mb-8 md:mb-12">
+      <footer className="bg-slate-950 text-slate-400 py-12 border-t border-slate-900">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-8">
+          <div className="md:col-span-2">
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                <TrendingUp className="text-white" size={18} />
+              </div>
+              <span className="text-xl font-bold text-white tracking-tight font-jakarta">Finensia.</span>
+            </div>
+            <p className="max-w-sm text-sm md:text-base">Solusi akuntansi dan perpajakan terpadu untuk percepatan skala bisnis Anda.</p>
+          </div>
           <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 font-jakarta tracking-tight">Kelola Konten</h1>
-            <p className="text-slate-500 mt-1">Ubah teks, foto, dan video yang tampil di halaman depan.</p>
+            <h4 className="text-white font-bold mb-4">Layanan</h4>
+            <ul className="space-y-2 text-sm md:text-base">
+              <li><a href="#layanan" className="hover:text-orange-500 transition">Pembukuan</a></li>
+              <li><a href="#layanan" className="hover:text-orange-500 transition">Pajak</a></li>
+              <li><a href="#layanan" className="hover:text-orange-500 transition">ERP Setup</a></li>
+              <li><a href="#kelas" className="hover:text-orange-500 transition">Academy</a></li>
+            </ul>
           </div>
-          <div className="hidden md:flex items-center gap-4 bg-white px-4 py-2 rounded-2xl border border-slate-200 shadow-sm">
-             <div className="text-right">
-                <p className="font-bold text-slate-900 text-sm">{loginUsername === 'admin' ? 'Adhwa Neisya' : loginUsername}</p>
-                <p className="text-xs text-emerald-500 font-bold flex items-center gap-1 justify-end"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Super Admin</p>
-             </div>
-             <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-extrabold text-slate-700 border border-slate-200">
-                <User size={20} />
-             </div>
+          <div>
+             <h4 className="text-white font-bold mb-4">Kontak</h4>
+             <ul className="space-y-2 text-sm md:text-base">
+              <li>Email: info@finensia.com</li>
+              <li>IG: @finensia.id</li>
+            </ul>
           </div>
-        </header>
-
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden min-h-[70vh]">
-          
-          {/* 1. TENTANG KAMI */}
-          {activeTab === 'about' && (
-            <div className="p-6 md:p-10 animate-in fade-in duration-300">
-              <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 pb-6 mb-8 gap-4">
-                <div>
-                  <h3 className="text-2xl font-bold font-jakarta text-slate-900">1. Tentang Kami</h3>
-                  <p className="text-sm text-slate-500">Ubah foto representasi perusahaan Anda.</p>
-                </div>
-                <button 
-                  onClick={() => handleSave('Tentang Kami', { image: aboutImg })} 
-                  disabled={isSaving}
-                  className="flex items-center justify-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 transition shadow-lg shadow-orange-500/20 disabled:opacity-50"
-                >
-                  {isSaving ? <Loader2 size={18} className="animate-spin-slow" /> : <Save size={18} />} 
-                  {isSaving ? 'Menyimpan...' : 'Simpan Foto'}
-                </button>
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-8 md:gap-12">
-                <div className="space-y-3">
-                  <label className="block text-sm font-bold text-slate-700">Foto Saat Ini (Preview)</label>
-                  <div className="aspect-square bg-slate-100 rounded-3xl border-2 border-slate-200 overflow-hidden relative shadow-inner">
-                    <img src={aboutImg} className="w-full h-full object-cover" alt="About Preview" />
-                  </div>
-                </div>
-                <div className="flex flex-col justify-center">
-                  <div className="bg-slate-50 p-6 md:p-8 rounded-3xl border border-slate-200 text-center">
-                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm border border-slate-100 text-orange-500">
-                      <Upload size={28} />
-                    </div>
-                    <h4 className="font-bold text-slate-900 mb-2">Ganti Foto Baru</h4>
-                    <p className="text-xs text-slate-500 mb-6 px-4">Foto akan dikonversi agar bisa diunggah ke Google Script.</p>
-                    <input type="file" id="uploadAbout" className="hidden" accept="image/*" onChange={handleAboutUpload} />
-                    <label htmlFor="uploadAbout" className="cursor-pointer block w-full py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition">
-                      Pilih File Upload
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 2. TESTIMONI */}
-          {activeTab === 'testi' && (
-            <div className="p-6 md:p-10 animate-in fade-in duration-300">
-              <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 pb-6 mb-8 gap-4">
-                <div>
-                  <h3 className="text-2xl font-bold font-jakarta text-slate-900">2. Testimoni Klien</h3>
-                  <p className="text-sm text-slate-500">Ubah nama, kategori (contoh: Business Owner), dan ulasan.</p>
-                </div>
-                <div className="flex gap-3">
-                  <button onClick={addTesti} className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition">
-                    <Plus size={18} /> Tambah
-                  </button>
-                  <button 
-                    onClick={() => handleSave('Testimoni', testimonials)} 
-                    disabled={isSaving}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 transition shadow-lg shadow-orange-500/20 disabled:opacity-50"
-                  >
-                    {isSaving ? <Loader2 size={18} className="animate-spin-slow" /> : <Save size={18} />} 
-                    Simpan Semua
-                  </button>
-                </div>
-              </div>
-              <div className="grid gap-6">
-                {testimonials.map((testi) => (
-                  <div key={testi.id} className="p-6 bg-slate-50 rounded-2xl border border-slate-200">
-                    <div className="grid md:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Nama Klien</label>
-                        <input type="text" value={testi.name} onChange={(e) => updateTesti(testi.id, 'name', e.target.value)} placeholder="Contoh: Rina Kartika" className="w-full p-3.5 bg-white border border-slate-200 rounded-xl font-bold focus:border-orange-500 outline-none transition" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Kategori (Job/Peran)</label>
-                        <input type="text" value={testi.role} onChange={(e) => updateTesti(testi.id, 'role', e.target.value)} placeholder="Contoh: Business Owner" className="w-full p-3.5 bg-white border border-slate-200 rounded-xl text-orange-600 font-bold focus:border-orange-500 outline-none transition" />
-                      </div>
-                    </div>
-                    <div className="mb-6">
-                      <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Isi Testimoni</label>
-                      <textarea rows={3} value={testi.text} onChange={(e) => updateTesti(testi.id, 'text', e.target.value)} placeholder="Tuliskan ulasan klien di sini..." className="w-full p-3.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-orange-500 outline-none transition resize-none"></textarea>
-                    </div>
-                    <div className="flex justify-end pt-4 border-t border-slate-200">
-                       <button onClick={() => deleteTesti(testi.id)} className="px-5 py-2.5 text-red-500 font-bold hover:bg-red-50 rounded-xl flex items-center justify-center gap-2 transition"><Trash2 size={16}/> Hapus Baris Ini</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 3. DOKUMENTASI */}
-          {activeTab === 'doc' && (
-            <div className="p-6 md:p-10 animate-in fade-in duration-300">
-              <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 pb-6 mb-8 gap-4">
-                <div>
-                  <h3 className="text-2xl font-bold font-jakarta text-slate-900">3. Dokumentasi / Kegiatan</h3>
-                  <p className="text-sm text-slate-500">Upload foto kegiatan, edit judul acara, dan deskripsi.</p>
-                </div>
-                <div className="flex gap-3">
-                  <button onClick={addDoc} className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition">
-                    <Plus size={18} /> Tambah
-                  </button>
-                  <button 
-                    onClick={() => handleSave('Dokumentasi', docs)} 
-                    disabled={isSaving}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 transition shadow-lg shadow-orange-500/20 disabled:opacity-50"
-                  >
-                    {isSaving ? <Loader2 size={18} className="animate-spin-slow" /> : <Save size={18} />} Simpan Semua
-                  </button>
-                </div>
-              </div>
-              <div className="space-y-8">
-                {docs.map((doc) => (
-                  <div key={doc.id} className="grid md:grid-cols-3 gap-6 items-start p-6 border border-slate-200 rounded-3xl bg-slate-50">
-                    <div className="space-y-3">
-                      <label className="block text-xs font-bold text-slate-500 uppercase">Foto Dokumentasi</label>
-                      <div className="aspect-video bg-white rounded-2xl overflow-hidden relative border border-slate-200 group">
-                         <img src={doc.img} className="w-full h-full object-cover" alt="Doc" />
-                         <div className="absolute inset-0 bg-slate-900/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
-                            <input type="file" id={`file-doc-${doc.id}`} onChange={(e) => handleArrayImageUpload(e, doc.id, 'doc')} className="hidden" accept="image/*" />
-                            <label htmlFor={`file-doc-${doc.id}`} className="cursor-pointer bg-white text-slate-900 px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2">
-                              <Upload size={16}/> Ganti Foto
-                            </label>
-                         </div>
-                      </div>
-                    </div>
-                    <div className="md:col-span-2 flex flex-col h-full">
-                      <div className="space-y-4 flex-1">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Judul Kegiatan</label>
-                          <input type="text" value={doc.title} onChange={(e) => updateDoc(doc.id, 'title', e.target.value)} placeholder="Contoh: Webinar Tax Planning" className="w-full p-3.5 bg-white border border-slate-200 rounded-xl font-bold focus:border-orange-500 outline-none transition" />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Deskripsi Kegiatan</label>
-                          <textarea rows={3} value={doc.desc} onChange={(e) => updateDoc(doc.id, 'desc', e.target.value)} placeholder="Contoh: Berbagi insight mengenai..." className="w-full p-3.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-orange-500 outline-none transition resize-none"></textarea>
-                        </div>
-                      </div>
-                      <div className="flex justify-end pt-6 border-t border-slate-200 mt-6">
-                        <button onClick={() => deleteDoc(doc.id)} className="px-4 py-2 text-red-500 font-bold hover:bg-red-50 rounded-xl transition flex items-center gap-2"><Trash2 size={18}/> Hapus Baris</button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 4. VIDEO PROFIL */}
-          {activeTab === 'video' && (
-            <div className="p-6 md:p-10 animate-in fade-in duration-300">
-              <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 pb-6 mb-8 gap-4">
-                <div>
-                  <h3 className="text-2xl font-bold font-jakarta text-slate-900">4. Video Profil</h3>
-                  <p className="text-sm text-slate-500">Tautkan video YouTube untuk ditampilkan di website.</p>
-                </div>
-                <button 
-                  onClick={() => handleSave('Video Profil', { url: videoUrl })} 
-                  disabled={isSaving}
-                  className="flex items-center justify-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 transition shadow-lg shadow-orange-500/20 disabled:opacity-50"
-                >
-                  {isSaving ? <Loader2 size={18} className="animate-spin-slow" /> : <Save size={18} />} Simpan Tautan
-                </button>
-              </div>
-              <div className="grid lg:grid-cols-2 gap-10">
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-3">Link YouTube (Embed URL)</label>
-                    <input type="text" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://www.youtube.com/embed/..." className="w-full p-4 border border-slate-300 rounded-2xl bg-slate-50 font-mono text-sm text-blue-600 outline-none focus:border-orange-500 focus:bg-white transition shadow-inner" />
-                  </div>
-                  <div className="bg-blue-50/50 p-5 rounded-2xl border border-blue-100 flex gap-4 text-blue-800 text-sm">
-                    <AlertCircle size={24} className="flex-shrink-0 text-blue-500 mt-1" />
-                    <div>
-                      <p className="font-bold text-blue-900 mb-1">Catatan Penting:</p>
-                      <p className="text-slate-600">Pastikan link mengandung kata <b>/embed/</b> agar video bisa diputar di dalam website tanpa pindah aplikasi.</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <label className="block text-sm font-bold text-slate-700">Preview Pemutar Video</label>
-                  <div className="aspect-video w-full bg-slate-950 rounded-3xl overflow-hidden shadow-xl border-4 border-slate-100">
-                    {videoUrl.includes('embed') ? (
-                       <iframe width="100%" height="100%" src={videoUrl} title="Preview Video" frameBorder="0" allowFullScreen></iframe>
-                    ) : (
-                       <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 bg-slate-100 gap-2">
-                         <Video size={32} />
-                         <p className="text-sm font-medium">Link video tidak valid.</p>
-                       </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 5. TIM PRAKTISI */}
-          {activeTab === 'team' && (
-            <div className="p-6 md:p-10 animate-in fade-in duration-300">
-              <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 pb-6 mb-8 gap-4">
-                <div>
-                  <h3 className="text-2xl font-bold font-jakarta text-slate-900">5. Tim Praktisi</h3>
-                  <p className="text-sm text-slate-500">Kelola foto, nama, dan bidang keahlian anggota tim.</p>
-                </div>
-                <div className="flex gap-3">
-                  <button onClick={addTeam} className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition">
-                    <Plus size={18} /> Tambah Anggota
-                  </button>
-                  <button 
-                    onClick={() => handleSave('Tim Praktisi', team)} 
-                    disabled={isSaving}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 transition shadow-lg shadow-orange-500/20 disabled:opacity-50"
-                  >
-                    {isSaving ? <Loader2 size={18} className="animate-spin-slow" /> : <Save size={18} />} Simpan Semua
-                  </button>
-                </div>
-              </div>
-              <div className="grid lg:grid-cols-2 gap-6">
-                {team.map((member) => (
-                  <div key={member.id} className="p-6 bg-slate-50 rounded-3xl border border-slate-200 transition hover:border-slate-300">
-                    <div className="flex flex-col sm:flex-row gap-6">
-                      <div className="flex-shrink-0 mx-auto sm:mx-0">
-                        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-white overflow-hidden relative group border-2 border-slate-200 shadow-sm">
-                           <img src={member.img} className="w-full h-full object-cover" alt={member.name} />
-                           <label htmlFor={`team-upload-${member.id}`} className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer backdrop-blur-sm">
-                              <Upload size={24} className="text-white" />
-                           </label>
-                           <input type="file" onChange={(e) => handleArrayImageUpload(e, member.id, 'team')} id={`team-upload-${member.id}`} className="hidden" accept="image/*" />
-                        </div>
-                      </div>
-                      <div className="flex-1 space-y-4">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Nama Lengkap</label>
-                          <input type="text" value={member.name} onChange={(e) => updateTeam(member.id, 'name', e.target.value)} placeholder="Contoh: Adhwa Neisya" className="w-full p-3 bg-white border border-slate-200 rounded-xl font-bold focus:border-orange-500 outline-none transition" />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Kategori / Job</label>
-                          <input type="text" value={member.job} onChange={(e) => updateTeam(member.id, 'job', e.target.value)} placeholder="Contoh: Tax / Accounting" className="w-full p-3 bg-white border border-slate-200 rounded-xl text-orange-600 font-bold text-sm focus:border-orange-500 outline-none transition" />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-6 pt-5 border-t border-slate-200 flex justify-end gap-3">
-                       <button onClick={() => deleteTeam(member.id)} className="p-2.5 text-slate-400 hover:text-red-500 transition rounded-xl hover:bg-red-50"><Trash2 size={20} /></button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 6. KELOLA ADMIN */}
-          {activeTab === 'admins' && (
-            <div className="p-6 md:p-10 animate-in fade-in duration-300">
-              <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-100 pb-6 mb-8 gap-4">
-                <div>
-                  <h3 className="text-2xl font-bold font-jakarta text-slate-900">6. Kelola Admin</h3>
-                  <p className="text-sm text-slate-500">Atur siapa saja yang memiliki akses ke dashboard ini.</p>
-                </div>
-                <div className="flex gap-3">
-                  <button onClick={addAdminUser} className="flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition">
-                    <UserPlus size={18} /> Tambah Admin
-                  </button>
-                  <button 
-                    onClick={() => handleSave('Data Admin', adminUsers)} 
-                    disabled={isSaving}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 transition shadow-lg shadow-orange-500/20 disabled:opacity-50"
-                  >
-                    {isSaving ? <Loader2 size={18} className="animate-spin-slow" /> : <Save size={18} />} Simpan Daftar
-                  </button>
-                </div>
-              </div>
-
-              <div className="bg-slate-50 rounded-3xl border border-slate-200 p-6">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-[600px]">
-                    <thead>
-                      <tr className="border-b border-slate-200 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                        <th className="pb-4 pt-2 px-4">Nama Lengkap</th>
-                        <th className="pb-4 pt-2 px-4">Username (Login)</th>
-                        <th className="pb-4 pt-2 px-4">Hak Akses</th>
-                        <th className="pb-4 pt-2 px-4 text-center">Hapus</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {adminUsers.map((admin) => (
-                        <tr key={admin.id} className="hover:bg-white transition-colors">
-                          <td className="py-4 px-4">
-                            <input 
-                              type="text" 
-                              value={admin.name}
-                              onChange={(e) => updateAdminUser(admin.id, 'name', e.target.value)} 
-                              placeholder="Nama Admin" 
-                              className="w-full bg-transparent border-none font-bold text-slate-900 focus:ring-0 outline-none"
-                            />
-                            <input 
-                              type="text" 
-                              value={admin.email}
-                              onChange={(e) => updateAdminUser(admin.id, 'email', e.target.value)} 
-                              placeholder="email@finensia.com" 
-                              className="w-full bg-transparent border-none text-xs text-slate-500 focus:ring-0 outline-none mt-1"
-                            />
-                          </td>
-                          <td className="py-4 px-4">
-                            <input 
-                              type="text" 
-                              value={admin.username}
-                              onChange={(e) => updateAdminUser(admin.id, 'username', e.target.value)} 
-                              placeholder="username_admin" 
-                              className="w-full bg-transparent border border-slate-200 rounded-lg p-2 text-sm text-slate-700 outline-none focus:border-orange-500 transition"
-                            />
-                          </td>
-                          <td className="py-4 px-4">
-                            <select 
-                              value={admin.role}
-                              onChange={(e) => updateAdminUser(admin.id, 'role', e.target.value)}
-                              className="bg-transparent border border-slate-200 rounded-lg p-2 text-sm font-bold text-orange-600 outline-none focus:border-orange-500 transition cursor-pointer"
-                            >
-                              <option value="Super Admin">Super Admin</option>
-                              <option value="Editor">Editor</option>
-                            </select>
-                          </td>
-                          <td className="py-4 px-4 text-center">
-                            <button onClick={() => deleteAdminUser(admin.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition" title="Hapus">
-                              <Trash2 size={18} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
         </div>
-      </main>
+        <div className="max-w-7xl mx-auto px-6 mt-12 pt-8 border-t border-slate-800 text-center text-xs md:text-sm">
+          &copy; 2026 Finensia. All rights reserved.
+        </div>
+      </footer>
+
+      <a href={waLinkGeneral} target="_blank" rel="noopener noreferrer" className="fixed bottom-6 right-6 bg-[#25D366] text-white p-4 rounded-full shadow-2xl hover:bg-[#128C7E] hover:scale-110 transition-all z-50 flex items-center justify-center group" aria-label="Chat WhatsApp">
+        <span className="absolute right-16 bg-white text-slate-800 text-sm font-bold px-4 py-2 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity shadow-lg pointer-events-none whitespace-nowrap">Hubungi Kami!</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c-.003 1.396.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.59 6.59 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/>
+        </svg>
+      </a>
     </div>
   );
 }
