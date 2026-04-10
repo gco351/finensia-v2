@@ -118,10 +118,11 @@ export default function App() {
   const [aboutImg, setAboutImg] = useState("");
   const [videoUrl, setVideoUrl] = useState("https://www.youtube.com/embed/tgbNymZ7vqY");
   
+  // Penambahan property job: "" pada initial state agar TypeScript tidak error saat build
   const [testimonials, setTestimonials] = useState([
-    { name: "Rina Kartika", text: "Pembukuan usaha saya jadi jauh lebih rapi dan terorganisir.", role: "Business Owner" },
-    { name: "Ahmad Fauzan", text: "Sekarang saya lebih paham akuntansi dan sudah dapat kerja.", role: "Alumni Kelas" },
-    { name: "Dwi Santoso", text: "Timnya profesional dan sangat membantu kelancaran bisnis kami.", role: "CEO" }
+    { name: "Rina Kartika", text: "Pembukuan usaha saya jadi jauh lebih rapi dan terorganisir.", role: "Business Owner", job: "" },
+    { name: "Ahmad Fauzan", text: "Sekarang saya lebih paham akuntansi dan sudah dapat kerja.", role: "Alumni Kelas", job: "" },
+    { name: "Dwi Santoso", text: "Timnya profesional dan sangat membantu kelancaran bisnis kami.", role: "CEO", job: "" }
   ]);
 
   const [docs, setDocs] = useState([
@@ -138,9 +139,9 @@ export default function App() {
   ]);
 
   const [team, setTeam] = useState([
-    { name: "Adhwa Neisya", role: "Accounting & Tax", img: "" },
-    { name: "Chelsea Hamid", role: "Tax Specialist", img: "" },
-    { name: "Lucas Abraham", role: "Accounting Specialist", img: "" }
+    { name: "Adhwa Neisya", role: "Accounting & Tax", job: "", img: "" },
+    { name: "Chelsea Hamid", role: "Tax Specialist", job: "", img: "" },
+    { name: "Lucas Abraham", role: "Accounting Specialist", job: "", img: "" }
   ]);
 
   // --- LOGIKA SINKRONISASI DATABASE (Sangat Aman & Anti-Crash) ---
