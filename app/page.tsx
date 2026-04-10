@@ -23,30 +23,6 @@ import {
   Gift
 } from 'lucide-react';
 
-// --- INTERFACES (Untuk mencegah error TypeScript di Vercel) ---
-interface Testimonial {
-  id?: number;
-  name: string;
-  role?: string;
-  job?: string;
-  text: string;
-}
-
-interface DocData {
-  id?: number;
-  title: string;
-  desc: string;
-  img: string;
-}
-
-interface TeamMember {
-  id?: number;
-  name: string;
-  role?: string;
-  job?: string;
-  img: string;
-}
-
 // --- CUSTOM CSS FOR ANIMATIONS & FONTS ---
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
@@ -92,7 +68,7 @@ const styles = `
 `;
 
 const FallingBackground = () => {
-  const [icons, setIcons] = useState<any[]>([]);
+  const [icons, setIcons] = useState([]);
 
   useEffect(() => {
     const iconTypes = ['dollar', 'calc', 'file', 'chart'];
@@ -131,24 +107,24 @@ const FallingBackground = () => {
 };
 
 export default function App() {
-  // Ganti dengan URL Google Script Anda
+  // PENTING: GANTI URL DI BAWAH INI DENGAN URL DEPLOYMENT YANG BARU DIBUAT BOS JIKA DIPERLUKAN
   const GAS_URL = "https://script.google.com/macros/s/AKfycbyNuAHdIXhC0JRFJCsjxGJWxK211PqlPXdTNz8yApWpCTOWSAlNDStEy2T9b9WPBW2F/exec";
 
-  const [activeFAQ, setActiveFAQ] = useState<number | null>(null);
+  const [activeFAQ, setActiveFAQ] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
   const [currentDocIndex, setCurrentDocIndex] = useState(0); 
 
-  // --- STATE DATA AWAL (Akan diganti otomatis oleh database) ---
+  // --- STATE DATA AWAL / CADANGAN ---
   const [aboutImg, setAboutImg] = useState("");
   const [videoUrl, setVideoUrl] = useState("https://www.youtube.com/embed/tgbNymZ7vqY");
   
-  const [testimonials, setTestimonials] = useState<Testimonial[]>([
+  const [testimonials, setTestimonials] = useState([
     { name: "Rina Kartika", text: "Pembukuan usaha saya jadi jauh lebih rapi dan terorganisir.", role: "Business Owner" },
     { name: "Ahmad Fauzan", text: "Sekarang saya lebih paham akuntansi dan sudah dapat kerja.", role: "Alumni Kelas" },
     { name: "Dwi Santoso", text: "Timnya profesional dan sangat membantu kelancaran bisnis kami.", role: "CEO" }
   ]);
 
-  const [docs, setDocs] = useState<DocData[]>([
+  const [docs, setDocs] = useState([
     {
       img: "https://placehold.co/800x500/1e293b/f97316?text=Kelas+Tatap+Muka",
       title: "Pelatihan Akuntansi Batch 1",
@@ -161,59 +137,73 @@ export default function App() {
     }
   ]);
 
-  const [team, setTeam] = useState<TeamMember[]>([
+  const [team, setTeam] = useState([
     { name: "Adhwa Neisya", role: "Accounting & Tax", img: "" },
     { name: "Chelsea Hamid", role: "Tax Specialist", img: "" },
     { name: "Lucas Abraham", role: "Accounting Specialist", img: "" }
   ]);
 
-  // --- SINKRONISASI DATA UTAMA ---
+  // --- LOGIKA SINKRONISASI DATABASE (Sangat Aman & Anti-Crash) ---
   useEffect(() => {
     let isMounted = true;
 
     const fetchDatabase = async () => {
       try {
-        // Menggunakan metode fetch paling murni agar tidak terblokir CORS
-        const response = await fetch(GAS_URL);
+        const targetUrl = GAS_URL.includes('?') ? `${GAS_URL}&t=${Date.now()}` : `${GAS_URL}?t=${Date.now()}`;
+        const response = await fetch(targetUrl);
         
-        if (!response.ok) throw new Error("Network response was not ok");
+        if (!response.ok) throw new Error("Gagal terhubung ke server Google.");
         
-        const json = await response.json();
+        // Membaca respon sebagai teks terlebih dahulu untuk menghindari crash jika diblokir
+        const textResponse = await response.text(); 
         
-        if (isMounted && json.status === 'success' && json.data) {
-          const d = json.data;
+        try {
+          const json = JSON.parse(textResponse);
           
-          if (d['Tentang Kami']?.image) setAboutImg(d['Tentang Kami'].image);
-          
-          if (d['Video Profil']?.url) {
-            let rawUrl = String(d['Video Profil'].url);
+          if (isMounted && json.status === 'success' && json.data) {
+            const d = json.data;
             
-            // PEMBERSIH URL OTOMATIS (Mencegah error dari copy-paste di Spreadsheet)
-            rawUrl = rawUrl.replace(/\\/g, ""); // Hapus backslash
-            rawUrl = rawUrl.split('"')[0]; // Ambil URL murni tanpa embel-embel title="..."
-            rawUrl = rawUrl.split(' ')[0]; 
-
-            if (rawUrl.includes('youtu.be/')) {
-               rawUrl = rawUrl.replace('youtu.be/', 'www.youtube.com/embed/').split('?')[0];
-            } else if (rawUrl.includes('watch?v=')) {
-               rawUrl = rawUrl.replace('watch?v=', 'embed/').split('&')[0];
+            if (d['Tentang Kami'] && d['Tentang Kami'].image) {
+               setAboutImg(d['Tentang Kami'].image);
             }
-            setVideoUrl(rawUrl);
+            
+            // Pembersih URL otomatis
+            if (d['Video Profil']) {
+              let rawUrl = "";
+              if (typeof d['Video Profil'] === 'object' && d['Video Profil'].url) {
+                 rawUrl = String(d['Video Profil'].url);
+              } else if (typeof d['Video Profil'] === 'string') {
+                 const match = d['Video Profil'].match(/https?:\/\/[^\s"\\]+/);
+                 if (match) rawUrl = match[0];
+                 else rawUrl = d['Video Profil'];
+              }
+
+              if (rawUrl) {
+                rawUrl = rawUrl.replace(/\\/g, "").split('"')[0].split(' ')[0]; 
+                if (rawUrl.includes('youtu.be/')) {
+                   rawUrl = rawUrl.replace('youtu.be/', 'www.youtube.com/embed/').split('?')[0];
+                } else if (rawUrl.includes('watch?v=')) {
+                   rawUrl = rawUrl.replace('watch?v=', 'embed/').split('&')[0];
+                }
+                setVideoUrl(rawUrl);
+              }
+            }
+            
+            if (d['Testimoni'] && Array.isArray(d['Testimoni']) && d['Testimoni'].length > 0) {
+              setTestimonials(d['Testimoni']);
+            }
+            if (d['Dokumentasi'] && Array.isArray(d['Dokumentasi']) && d['Dokumentasi'].length > 0) {
+              setDocs(d['Dokumentasi']);
+            }
+            if (d['Tim Praktisi'] && Array.isArray(d['Tim Praktisi']) && d['Tim Praktisi'].length > 0) {
+              setTeam(d['Tim Praktisi']);
+            }
           }
-          
-          if (d['Testimoni'] && Array.isArray(d['Testimoni']) && d['Testimoni'].length > 0) {
-            setTestimonials(d['Testimoni']);
-          }
-          if (d['Dokumentasi'] && Array.isArray(d['Dokumentasi']) && d['Dokumentasi'].length > 0) {
-            setDocs(d['Dokumentasi']);
-          }
-          if (d['Tim Praktisi'] && Array.isArray(d['Tim Praktisi']) && d['Tim Praktisi'].length > 0) {
-            setTeam(d['Tim Praktisi']);
-          }
+        } catch (parseError) {
+          console.log("Akses Google Script tertahan sementara. Menjalankan versi lokal.");
         }
       } catch (error) {
-        // Abaikan error di konsol, website akan tetap menyala pakai data default di atas
-        console.log("Menggunakan data lokal."); 
+        console.log("Menjalankan versi lokal."); 
       }
     };
 
@@ -238,11 +228,11 @@ export default function App() {
   ];
 
   const nextDoc = () => {
-    setCurrentDocIndex((prev) => (prev === docs.length - 1 ? 0 : prev + 1));
+    if(docs.length > 0) setCurrentDocIndex((prev) => (prev === docs.length - 1 ? 0 : prev + 1));
   };
 
   const prevDoc = () => {
-    setCurrentDocIndex((prev) => (prev === 0 ? docs.length - 1 : prev - 1));
+    if(docs.length > 0) setCurrentDocIndex((prev) => (prev === 0 ? docs.length - 1 : prev - 1));
   };
 
   const closeMobileMenu = () => {
@@ -251,11 +241,11 @@ export default function App() {
 
   // --- ANTI COPY/INSPECT ---
   useEffect(() => {
-    const handleKeyDown = (e: any) => {
+    const handleKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && ['c', 'u', 's'].includes(e.key.toLowerCase())) e.preventDefault();
       if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'i')) e.preventDefault();
     };
-    const handleDragStart = (e: any) => e.preventDefault();
+    const handleDragStart = (e) => e.preventDefault();
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('dragstart', handleDragStart);
     return () => {
@@ -410,7 +400,6 @@ export default function App() {
           </div>
 
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
-            {/* Service 1 */}
             <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 hover-lift group cursor-default">
               <div className="w-14 h-14 bg-blue-50 text-slate-900 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-slate-900 group-hover:text-white transition-colors duration-500">
                 <BookOpen size={28} />
@@ -425,7 +414,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Service 2 */}
             <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 hover-lift group cursor-default">
               <div className="w-14 h-14 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-500 group-hover:text-white transition-colors duration-500">
                 <FileText size={28} />
@@ -440,7 +428,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Service 3 */}
             <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 sm:col-span-2 md:col-span-1 hover-lift group cursor-default">
               <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-500 transition-colors duration-500">
                 <Calculator size={28} />
@@ -458,7 +445,7 @@ export default function App() {
         </div>
       </section>
 
-      {/* KELAS / ACADEMY */}
+      {/* ACADEMY */}
       <section id="kelas" className="py-20 md:py-24 bg-slate-900 text-white">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
@@ -470,7 +457,6 @@ export default function App() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto">
-            {/* Class 1 */}
             <div className="bg-slate-800 rounded-3xl p-6 md:p-10 border border-slate-700 relative overflow-hidden hover-lift flex flex-col">
               <div className="absolute top-0 right-0 bg-orange-500 text-white text-xs font-bold px-4 py-1 rounded-bl-xl uppercase tracking-wider">
                 Paling Diminati
@@ -508,7 +494,6 @@ export default function App() {
               </a>
             </div>
 
-            {/* Class 2 */}
             <div className="bg-slate-800/50 rounded-3xl p-6 md:p-10 border border-slate-700/50 transition-all flex flex-col hover-lift">
               <h3 className="text-xl md:text-2xl font-bold mb-2">Accounting Intensive</h3>
               <p className="text-slate-400 mb-6 md:mb-8 text-sm md:text-base">Belajar dari nol hingga bisa membuat laporan keuangan.</p>
@@ -571,7 +556,7 @@ export default function App() {
               <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200 transition-all duration-300">
                 <img 
                   src={docs[currentDocIndex]?.img || "https://placehold.co/800x500/1e293b/f97316?text=Gambar+Kosong"} 
-                  alt={docs[currentDocIndex]?.title}
+                  alt={docs[currentDocIndex]?.title || "Dokumentasi Finensia"}
                   className="w-full h-56 md:h-72 object-cover bg-slate-200"
                   draggable="false"
                 />
