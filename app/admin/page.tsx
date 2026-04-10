@@ -57,7 +57,7 @@ export default function AdminDashboard() {
   // ==========================================
   // URL GOOGLE APPS SCRIPT
   // ==========================================
-  const GAS_URL = "URL_GOOGLE_SCRIPT_ANDA_DI_SINI"; 
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbyNuAHdIXhC0JRFJCsjxGJWxK211PqlPXdTNz8yApWpCTOWSAlNDStEy2T9b9WPBW2F/exec"; 
 
   const [isMounted, setIsMounted] = useState(false);
 
