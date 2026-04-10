@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Calculator, 
@@ -31,14 +33,14 @@ const styles = `
   /* Icon Fall Animation */
   @keyframes fall {
     0% { transform: translateY(-10vh) rotate(0deg); opacity: 0; }
-    10% { opacity: 0.6; }
-    90% { opacity: 0.6; }
+    10% { opacity: 0.8; }
+    90% { opacity: 0.8; }
     100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
   }
   .falling-icon {
     position: absolute;
     animation: fall linear infinite;
-    color: rgba(249, 115, 22, 0.4); 
+    color: rgba(249, 115, 22, 0.7); 
     z-index: 0;
   }
 
@@ -98,9 +100,11 @@ const styles = `
   }
 `;
 
-// --- DATA STATIS AWAL ---
+// --- DATA STATIS AWAL (FALLBACK) ---
 const waNumber = "6281226523207"; 
 const waLinkGeneral = `https://wa.me/${waNumber}?text=Halo%20Finensia,%20saya%20ingin%20berkonsultasi.`;
+const waLinkClass1 = `https://wa.me/${waNumber}?text=Halo%20Finensia,%20saya%20ingin%20daftar%20kelas%20Professional%20Accounting.`;
+const waLinkClass2 = `https://wa.me/${waNumber}?text=Halo%20Finensia,%20saya%20ingin%20daftar%20kelas%20Accounting%20Intensive.`;
 
 const faqs = [
   { q: "Apakah Finensia cocok untuk pemula?", a: "Ya, layanan kami dirancang untuk pemula hingga profesional." },
@@ -185,12 +189,81 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
   const [currentDocIndex, setCurrentDocIndex] = useState(0); 
   const [isScrolled, setIsScrolled] = useState(false);
-  const [imageKey, setImageKey] = useState(0); // Untuk re-trigger animasi fade
+  const [imageKey, setImageKey] = useState(0); 
 
-  // --- STATE DATA ---
-  const [testimonials] = useState(fallbackTestimonials);
-  const [docs] = useState(fallbackDocs);
-  const [team] = useState(fallbackTeam);
+  // --- STATE DATA (Diinisialisasi dengan fallback untuk mencegah blank) ---
+  const [aboutImg, setAboutImg] = useState("https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80");
+  const [videoUrl, setVideoUrl] = useState("https://www.youtube.com/embed/EJozdWEAdus?rel=0");
+  const [testimonials, setTestimonials] = useState(fallbackTestimonials);
+  const [docs, setDocs] = useState(fallbackDocs);
+  const [team, setTeam] = useState(fallbackTeam);
+
+  // --- SUPABASE FETCH LOGIC ---
+  useEffect(() => {
+    let isMounted = true;
+    
+    // Aman untuk dieksekusi di browser (client-side) tanpa ReferenceError
+    let supabaseUrl = "";
+    let supabaseKey = "";
+    try {
+      if (typeof process !== 'undefined' && process.env) {
+        supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+        supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+      }
+    } catch (e) {
+      console.warn("Variabel proses tidak ditemukan, menggunakan fallback statis.");
+    }
+
+    const fetchTable = async (tableName) => {
+      if (!supabaseUrl || !supabaseKey) return null;
+      try {
+        const response = await fetch(`${supabaseUrl}/rest/v1/${tableName}?select=*`, {
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`
+          }
+        });
+        if (!response.ok) return null;
+        return await response.json();
+      } catch (error) {
+        return null;
+      }
+    };
+
+    const loadDatabase = async () => {
+      // Jalankan secara paralel mempercepat loading
+      const [dataTentang, dataVideo, dataTesti, dataDok, dataTim] = await Promise.all([
+        fetchTable('tentang_kami'),
+        fetchTable('video_profil'),
+        fetchTable('testimoni'),
+        fetchTable('dokumentasi'),
+        fetchTable('tim_praktisi')
+      ]);
+
+      if (isMounted) {
+        // Cek Array.isArray untuk mencegah error "Objects are not valid as React child" dari respons error Supabase
+        if (Array.isArray(dataTentang) && dataTentang.length > 0) {
+          setAboutImg(String(dataTentang[0].image || dataTentang[0].img_url || dataTentang[0].img || aboutImg));
+        }
+        
+        if (Array.isArray(dataVideo) && dataVideo.length > 0) {
+          let rawUrl = String(dataVideo[0].url || "");
+          if (rawUrl) {
+            if (rawUrl.includes('youtu.be/')) rawUrl = rawUrl.replace('youtu.be/', 'www.youtube.com/embed/').split('?')[0];
+            else if (rawUrl.includes('watch?v=')) rawUrl = rawUrl.replace('watch?v=', 'embed/').split('&')[0];
+            setVideoUrl(rawUrl);
+          }
+        }
+        
+        if (Array.isArray(dataTesti) && dataTesti.length > 0) setTestimonials(dataTesti);
+        if (Array.isArray(dataDok) && dataDok.length > 0) setDocs(dataDok);
+        if (Array.isArray(dataTim) && dataTim.length > 0) setTeam(dataTim);
+      }
+    };
+
+    loadDatabase();
+    return () => { isMounted = false; };
+  }, []);
 
   // --- SCROLL OBSERVER EFFECT ---
   useEffect(() => {
@@ -343,7 +416,7 @@ export default function App() {
             
             <div className="relative order-1 lg:order-2 mb-8 lg:mb-0 max-w-md mx-auto lg:mx-0 lg:ml-auto reveal-on-scroll delay-200">
               <div className="aspect-square bg-[#e2e8f0] rounded-[2rem] overflow-hidden relative flex items-center justify-center border-[6px] border-white shadow-2xl shadow-slate-200 group">
-                 <img src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Tim Finensia" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                 <img src={aboutImg} alt="Tim Finensia" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </div>
               
@@ -463,9 +536,14 @@ export default function App() {
                 </li>
               </ul>
               
-              <button className="w-full py-4 bg-gradient-to-r from-[#f97316] to-[#ea580c] hover:opacity-90 text-white rounded-xl font-bold transition-all text-sm shadow-lg shadow-orange-500/25">
+              <a 
+                href={waLinkClass1}
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block text-center w-full py-4 bg-gradient-to-r from-[#f97316] to-[#ea580c] hover:opacity-90 text-white rounded-xl font-bold transition-all text-sm shadow-lg shadow-orange-500/25"
+              >
                 Daftar Sekarang
-              </button>
+              </a>
             </div>
 
             {/* Card 2 */}
@@ -486,9 +564,14 @@ export default function App() {
                 ))}
               </ul>
               
-              <button className="w-full py-4 bg-transparent border border-slate-700 hover:border-slate-500 hover:bg-white/5 text-white rounded-xl font-bold transition-all text-sm">
+              <a 
+                href={waLinkClass2}
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block text-center w-full py-4 bg-transparent border border-slate-700 hover:border-slate-500 hover:bg-white/5 text-white rounded-xl font-bold transition-all text-sm"
+              >
                 Daftar Sekarang
-              </button>
+              </a>
             </div>
           </div>
         </div>
@@ -526,8 +609,8 @@ export default function App() {
               <div className="w-48 h-48 md:w-56 md:h-56 flex-shrink-0 rounded-[1.5rem] overflow-hidden shadow-lg border-4 border-slate-50 bg-slate-100 relative group">
                 <img 
                   key={imageKey} // Force re-render for fade animation
-                  src={docs[currentDocIndex]?.img} 
-                  alt={docs[currentDocIndex]?.title} 
+                  src={String(docs[currentDocIndex]?.img || docs[currentDocIndex]?.image || '')} 
+                  alt={String(docs[currentDocIndex]?.title || 'Dokumentasi Finensia')} 
                   className="w-full h-full object-cover fade-image group-hover:scale-110 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-[1.5rem]"></div>
@@ -536,10 +619,10 @@ export default function App() {
               {/* Deskripsi */}
               <div className="flex-1 text-center md:text-left">
                 <h3 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4 font-jakarta">
-                  {docs[currentDocIndex]?.title}
+                  {String(docs[currentDocIndex]?.title || '')}
                 </h3>
                 <p className="text-slate-500 text-sm md:text-base leading-relaxed mb-8">
-                  {docs[currentDocIndex]?.desc}
+                  {String(docs[currentDocIndex]?.desc || docs[currentDocIndex]?.deskripsi || '')}
                 </p>
                 
                 {/* Indikator Slider (Titik-titik) */}
@@ -577,7 +660,7 @@ export default function App() {
              <iframe 
                width="100%" 
                height="100%" 
-               src="https://www.youtube.com/embed/EJozdWEAdus?rel=0" 
+               src={videoUrl} 
                title="Video Profil Finensia" 
                frameBorder="0" 
                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
@@ -608,16 +691,16 @@ export default function App() {
                   </div>
                   <p className="text-slate-600 italic mb-8 text-sm leading-relaxed relative">
                     <span className="text-4xl text-slate-200 absolute -top-4 -left-2 font-serif">"</span>
-                    <span className="relative z-10">{testi.text}</span>
+                    <span className="relative z-10">{String(testi.text || testi.testimoni || '')}</span>
                   </p>
                 </div>
                 <div className="flex items-center gap-3 pt-4 border-t border-slate-50">
                   <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold font-jakarta uppercase text-sm">
-                    {testi.name.charAt(0)}
+                    {String(testi.name || testi.nama || 'A').charAt(0)}
                   </div>
                   <div>
-                    <h5 className="font-bold text-slate-900 font-jakarta text-sm">{testi.name}</h5>
-                    <p className="text-xs text-slate-500">{testi.role}</p>
+                    <h5 className="font-bold text-slate-900 font-jakarta text-sm">{String(testi.name || testi.nama || '')}</h5>
+                    <p className="text-xs text-slate-500">{String(testi.role || testi.job || '')}</p>
                   </div>
                 </div>
               </div>
@@ -647,12 +730,16 @@ export default function App() {
             <div className="grid gap-4">
                {team.map((member, i) => (
                  <div key={i} className={`flex items-center gap-5 bg-[#151f32]/50 backdrop-blur-sm p-4 rounded-2xl border border-slate-800/50 hover:border-[#f97316]/50 hover:bg-[#151f32] transition-all duration-300 group reveal-on-scroll delay-${(i%3)*100} cursor-default hover:-translate-y-1 shadow-md hover:shadow-orange-900/20`}>
-                   <div className="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center flex-shrink-0 border border-slate-700 text-slate-400 group-hover:bg-[#f97316]/10 group-hover:text-[#f97316] transition-colors">
-                     <Users size={20} />
+                   <div className="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center flex-shrink-0 border border-slate-700 text-slate-400 group-hover:bg-[#f97316]/10 group-hover:text-[#f97316] transition-colors overflow-hidden">
+                     {member.img || member.image ? (
+                       <img src={String(member.img || member.image)} alt={String(member.name)} className="w-full h-full object-cover" />
+                     ) : (
+                       <Users size={20} />
+                     )}
                    </div>
                    <div>
-                     <h4 className="font-bold text-sm md:text-base text-white font-jakarta group-hover:text-[#f97316] transition-colors">{member.name}</h4>
-                     <p className="text-slate-400 text-xs md:text-sm mt-1">{member.role}</p>
+                     <h4 className="font-bold text-sm md:text-base text-white font-jakarta group-hover:text-[#f97316] transition-colors">{String(member.name || member.nama || '')}</h4>
+                     <p className="text-slate-400 text-xs md:text-sm mt-1">{String(member.role || member.job || '')}</p>
                    </div>
                  </div>
                ))}
