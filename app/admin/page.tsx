@@ -55,7 +55,7 @@ const styles = `
 
 export default function AdminDashboard() {
   // ==========================================
-  // URL GOOGLE APPS SCRIPT
+  // URL GOOGLE APPS SCRIPT (SUDAH FIX)
   // ==========================================
   const GAS_URL = "https://script.google.com/macros/s/AKfycbyNuAHdIXhC0JRFJCsjxGJWxK211PqlPXdTNz8yApWpCTOWSAlNDStEy2T9b9WPBW2F/exec"; 
 
@@ -199,11 +199,6 @@ export default function AdminDashboard() {
   };
 
   const handleSave = async (section: string, payloadData: any) => {
-    if (GAS_URL === "URL_GOOGLE_SCRIPT_ANDA_DI_SINI") {
-      showNotification("Gagal: URL Google Script belum diatur di kode!", "error");
-      return;
-    }
-
     setIsSaving(true);
     showNotification(`Menyimpan data [${section}] ke database...`, 'loading');
 
@@ -547,7 +542,6 @@ export default function AdminDashboard() {
                     </div>
                     <div className="mb-6">
                       <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Isi Testimoni</label>
-                      {/* FIX: MENGGUNAKAN KURUNG KURAWAL PADA ROWS={3} */}
                       <textarea rows={3} value={testi.text} onChange={(e) => updateTesti(testi.id, 'text', e.target.value)} placeholder="Tuliskan ulasan klien di sini..." className="w-full p-3.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-orange-500 outline-none transition resize-none"></textarea>
                     </div>
                     <div className="flex justify-end pt-4 border-t border-slate-200">
@@ -603,7 +597,6 @@ export default function AdminDashboard() {
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Deskripsi Kegiatan</label>
-                          {/* FIX: MENGGUNAKAN KURUNG KURAWAL PADA ROWS={3} */}
                           <textarea rows={3} value={doc.desc} onChange={(e) => updateDoc(doc.id, 'desc', e.target.value)} placeholder="Contoh: Berbagi insight mengenai..." className="w-full p-3.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-orange-500 outline-none transition resize-none"></textarea>
                         </div>
                       </div>
