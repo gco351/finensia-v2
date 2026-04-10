@@ -139,9 +139,9 @@ const fallbackDocs = [
 ];
 
 const fallbackTeam = [
-  { name: "Adhwa Neisya", role: "Accounting & Tax" },
-  { name: "Chelsea Hamid", role: "Tax Specialist" },
-  { name: "Lucas Abraham", role: "Accounting Specialist" }
+  { name: "Adhwa Neisya", role: "Accounting & Tax", img: "" },
+  { name: "Chelsea Hamid", role: "Tax Specialist", img: "" },
+  { name: "Lucas Abraham", role: "Accounting Specialist", img: "" }
 ];
 
 // --- KOMPONEN BACKGROUND ANIMASI ---
@@ -202,7 +202,6 @@ export default function App() {
   useEffect(() => {
     let isMounted = true;
     
-    // Aman untuk dieksekusi di browser (client-side) tanpa ReferenceError
     let supabaseUrl = "";
     let supabaseKey = "";
     try {
@@ -211,7 +210,7 @@ export default function App() {
         supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
       }
     } catch (e) {
-      console.warn("Variabel proses tidak ditemukan, menggunakan fallback statis.");
+      console.warn("Variabel environment tidak ditemukan.");
     }
 
     const fetchTable = async (tableName) => {
@@ -231,7 +230,6 @@ export default function App() {
     };
 
     const loadDatabase = async () => {
-      // Jalankan secara paralel mempercepat loading
       const [dataTentang, dataVideo, dataTesti, dataDok, dataTim] = await Promise.all([
         fetchTable('tentang_kami'),
         fetchTable('video_profil'),
@@ -241,7 +239,6 @@ export default function App() {
       ]);
 
       if (isMounted) {
-        // Cek Array.isArray untuk mencegah error "Objects are not valid as React child" dari respons error Supabase
         if (Array.isArray(dataTentang) && dataTentang.length > 0) {
           setAboutImg(String(dataTentang[0].image || dataTentang[0].img_url || dataTentang[0].img || aboutImg));
         }
@@ -255,9 +252,30 @@ export default function App() {
           }
         }
         
-        if (Array.isArray(dataTesti) && dataTesti.length > 0) setTestimonials(dataTesti);
-        if (Array.isArray(dataDok) && dataDok.length > 0) setDocs(dataDok);
-        if (Array.isArray(dataTim) && dataTim.length > 0) setTeam(dataTim);
+        // MAPPING DATA: Agar key dari Supabase selalu diseragamkan dengan tipe data Fallback (Mencegah TypeScript Error)
+        if (Array.isArray(dataTesti) && dataTesti.length > 0) {
+          setTestimonials(dataTesti.map(t => ({
+            name: String(t.name || t.nama || ''),
+            text: String(t.text || t.testimoni || ''),
+            role: String(t.role || t.job || '')
+          })));
+        }
+
+        if (Array.isArray(dataDok) && dataDok.length > 0) {
+          setDocs(dataDok.map(d => ({
+            img: String(d.img || d.image || d.img_url || ''),
+            title: String(d.title || ''),
+            desc: String(d.desc || d.deskripsi || '')
+          })));
+        }
+
+        if (Array.isArray(dataTim) && dataTim.length > 0) {
+          setTeam(dataTim.map(m => ({
+            name: String(m.name || m.nama || ''),
+            role: String(m.role || m.job || ''),
+            img: String(m.img || m.image || '')
+          })));
+        }
       }
     };
 
@@ -609,8 +627,8 @@ export default function App() {
               <div className="w-48 h-48 md:w-56 md:h-56 flex-shrink-0 rounded-[1.5rem] overflow-hidden shadow-lg border-4 border-slate-50 bg-slate-100 relative group">
                 <img 
                   key={imageKey} // Force re-render for fade animation
-                  src={String(docs[currentDocIndex]?.img || docs[currentDocIndex]?.image || '')} 
-                  alt={String(docs[currentDocIndex]?.title || 'Dokumentasi Finensia')} 
+                  src={docs[currentDocIndex]?.img || ''} 
+                  alt={docs[currentDocIndex]?.title || 'Dokumentasi Finensia'} 
                   className="w-full h-full object-cover fade-image group-hover:scale-110 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-[1.5rem]"></div>
@@ -619,10 +637,10 @@ export default function App() {
               {/* Deskripsi */}
               <div className="flex-1 text-center md:text-left">
                 <h3 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4 font-jakarta">
-                  {String(docs[currentDocIndex]?.title || '')}
+                  {docs[currentDocIndex]?.title || ''}
                 </h3>
                 <p className="text-slate-500 text-sm md:text-base leading-relaxed mb-8">
-                  {String(docs[currentDocIndex]?.desc || docs[currentDocIndex]?.deskripsi || '')}
+                  {docs[currentDocIndex]?.desc || ''}
                 </p>
                 
                 {/* Indikator Slider (Titik-titik) */}
@@ -691,16 +709,16 @@ export default function App() {
                   </div>
                   <p className="text-slate-600 italic mb-8 text-sm leading-relaxed relative">
                     <span className="text-4xl text-slate-200 absolute -top-4 -left-2 font-serif">&quot;</span>
-                    <span className="relative z-10">{String(testi.text || testi.testimoni || '')}</span>
+                    <span className="relative z-10">{testi.text}</span>
                   </p>
                 </div>
                 <div className="flex items-center gap-3 pt-4 border-t border-slate-50">
                   <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold font-jakarta uppercase text-sm">
-                    {String(testi.name || testi.nama || 'A').charAt(0)}
+                    {(testi.name || 'A').charAt(0)}
                   </div>
                   <div>
-                    <h5 className="font-bold text-slate-900 font-jakarta text-sm">{String(testi.name || testi.nama || '')}</h5>
-                    <p className="text-xs text-slate-500">{String(testi.role || testi.job || '')}</p>
+                    <h5 className="font-bold text-slate-900 font-jakarta text-sm">{testi.name}</h5>
+                    <p className="text-xs text-slate-500">{testi.role}</p>
                   </div>
                 </div>
               </div>
@@ -731,15 +749,15 @@ export default function App() {
                {team.map((member, i) => (
                  <div key={i} className={`flex items-center gap-5 bg-[#151f32]/50 backdrop-blur-sm p-4 rounded-2xl border border-slate-800/50 hover:border-[#f97316]/50 hover:bg-[#151f32] transition-all duration-300 group reveal-on-scroll delay-${(i%3)*100} cursor-default hover:-translate-y-1 shadow-md hover:shadow-orange-900/20`}>
                    <div className="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center flex-shrink-0 border border-slate-700 text-slate-400 group-hover:bg-[#f97316]/10 group-hover:text-[#f97316] transition-colors overflow-hidden">
-                     {member.img || member.image ? (
-                       <img src={String(member.img || member.image)} alt={String(member.name)} className="w-full h-full object-cover" />
+                     {member.img ? (
+                       <img src={member.img} alt={member.name} className="w-full h-full object-cover" />
                      ) : (
                        <Users size={20} />
                      )}
                    </div>
                    <div>
-                     <h4 className="font-bold text-sm md:text-base text-white font-jakarta group-hover:text-[#f97316] transition-colors">{String(member.name || member.nama || '')}</h4>
-                     <p className="text-slate-400 text-xs md:text-sm mt-1">{String(member.role || member.job || '')}</p>
+                     <h4 className="font-bold text-sm md:text-base text-white font-jakarta group-hover:text-[#f97316] transition-colors">{member.name}</h4>
+                     <p className="text-slate-400 text-xs md:text-sm mt-1">{member.role}</p>
                    </div>
                  </div>
                ))}
