@@ -22,7 +22,7 @@ export default function AdminDashboard() {
   // ==========================================
   // CONFIGURATION (LINK GOOGLE SCRIPT BOS)
   // ==========================================
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbwG1EeLiRedbDh_Vc6ztm87swe8Z4nHwOR6Tg_TTmIbR23m5nodKt6_NlpckYIN5fk9/exec"; 
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbz68rjZvHFfy7nCyDP1qJvQtIo9wnoxEWJGg42dsp3y1Kve1ryd30-DzHefIQ8vvMZW/exec"; 
 
   const [isMounted, setIsMounted] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
