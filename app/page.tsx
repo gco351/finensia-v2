@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Calculator, 
   CircleDollarSign, 
@@ -690,7 +690,7 @@ export default function App() {
                     {[...Array(5)].map((_, j) => <Star key={j} size={16} fill="currentColor" />)}
                   </div>
                   <p className="text-slate-600 italic mb-8 text-sm leading-relaxed relative">
-                    <span className="text-4xl text-slate-200 absolute -top-4 -left-2 font-serif">"</span>
+                    <span className="text-4xl text-slate-200 absolute -top-4 -left-2 font-serif">&quot;</span>
                     <span className="relative z-10">{String(testi.text || testi.testimoni || '')}</span>
                   </p>
                 </div>
@@ -722,7 +722,7 @@ export default function App() {
               </p>
               <div className="bg-[#151f32]/80 backdrop-blur-sm p-6 rounded-2xl border-l-4 border-[#f97316] shadow-lg">
                 <p className="italic text-slate-300 text-sm leading-relaxed">
-                  "Bagi kami, akuntansi bukan sekadar angka, melainkan sistem yang membantu bisnis bertahan dan berkembang."
+                  &quot;Bagi kami, akuntansi bukan sekadar angka, melainkan sistem yang membantu bisnis bertahan dan berkembang.&quot;
                 </p>
               </div>
             </div>
@@ -813,8 +813,8 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-6 mt-12 pt-8 border-t border-slate-800/50 text-center text-xs text-slate-500 flex flex-col md:flex-row justify-between items-center gap-4">
           <p>&copy; {new Date().getFullYear()} Finensia. All rights reserved.</p>
           <div className="flex gap-4">
-            <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+            <a href="#/" className="hover:text-white transition-colors">Privacy Policy</a>
+            <a href="#/" className="hover:text-white transition-colors">Terms of Service</a>
           </div>
         </div>
       </footer>
