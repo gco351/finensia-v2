@@ -57,7 +57,7 @@ export default function AdminDashboard() {
   // ==========================================
   // URL GOOGLE APPS SCRIPT (SUDAH FIX)
   // ==========================================
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbyNuAHdIXhC0JRFJCsjxGJWxK211PqlPXdTNz8yApWpCTOWSAlNDStEy2T9b9WPBW2F/exec"; 
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbwiiBGWqYItwBQ5818pj7Y3uK04YIuYfLJzSUtvc0m82f5XJ6AoxUWBcbC9XWqwM7Pi/exec"; 
 
   const [isMounted, setIsMounted] = useState(false);
 
