@@ -23,6 +23,39 @@ import {
   Gift
 } from 'lucide-react';
 
+// --- INTERFACES (Menghindari Error TypeScript di Vercel) ---
+interface Testimonial {
+  id?: number;
+  name: string;
+  role?: string;
+  job?: string;
+  text: string;
+}
+
+interface DocData {
+  id?: number;
+  title: string;
+  desc: string;
+  img: string;
+}
+
+interface TeamMember {
+  id?: number;
+  name: string;
+  role?: string;
+  job?: string;
+  img: string;
+}
+
+interface IconData {
+  id: number;
+  type: string;
+  left: string;
+  animationDuration: string;
+  animationDelay: string;
+  size: number;
+}
+
 // --- CUSTOM CSS FOR ANIMATIONS & FONTS ---
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
@@ -68,7 +101,7 @@ const styles = `
 `;
 
 const FallingBackground = () => {
-  const [icons, setIcons] = useState<any[]>([]);
+  const [icons, setIcons] = useState<IconData[]>([]);
 
   useEffect(() => {
     const iconTypes = ['dollar', 'calc', 'file', 'chart'];
@@ -107,25 +140,24 @@ const FallingBackground = () => {
 };
 
 export default function App() {
-  // PENTING: JIKA ANDA MEMILIKI URL BARU, SILAKAN GANTI DI BAWAH INI
+  // PENTING: GANTI URL DI BAWAH INI DENGAN URL DEPLOYMENT YANG BARU
   const GAS_URL = "https://script.google.com/macros/s/AKfycbyNuAHdIXhC0JRFJCsjxGJWxK211PqlPXdTNz8yApWpCTOWSAlNDStEy2T9b9WPBW2F/exec";
 
   const [activeFAQ, setActiveFAQ] = useState<number | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
   const [currentDocIndex, setCurrentDocIndex] = useState(0); 
 
-  // --- STATE DATA FINAL ---
-  // Data ini akan menjadi data utama yang sangat rapi jika Google memblokir penarikan
+  // --- STATE DATA AWAL / CADANGAN (Menjamin Website Tidak Blank) ---
   const [aboutImg, setAboutImg] = useState("");
-  const [videoUrl, setVideoUrl] = useState("https://www.youtube.com/embed/EJozdWEAdus"); // Video Default Finensia
+  const [videoUrl, setVideoUrl] = useState("https://www.youtube.com/embed/EJozdWEAdus");
   
-  const [testimonials, setTestimonials] = useState<any[]>([
-    { name: "Rina Kartika", text: "Pembukuan usaha saya jadi jauh lebih rapi dan terorganisir.", role: "Business Owner", job: "" },
-    { name: "Ahmad Fauzan", text: "Sekarang saya lebih paham akuntansi dan sudah dapat kerja.", role: "Alumni Kelas", job: "" },
-    { name: "Dwi Santoso", text: "Timnya profesional dan sangat membantu kelancaran bisnis kami.", role: "CEO", job: "" }
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([
+    { name: "Rina Kartika", text: "Pembukuan usaha saya jadi jauh lebih rapi dan terorganisir.", role: "Business Owner", job: "Business Owner" },
+    { name: "Ahmad Fauzan", text: "Sekarang saya lebih paham akuntansi dan sudah dapat kerja.", role: "Alumni Kelas", job: "Alumni Kelas" },
+    { name: "Dwi Santoso", text: "Timnya profesional dan sangat membantu kelancaran bisnis kami.", role: "CEO", job: "CEO" }
   ]);
 
-  const [docs, setDocs] = useState<any[]>([
+  const [docs, setDocs] = useState<DocData[]>([
     {
       img: "https://placehold.co/800x500/1e293b/f97316?text=Kelas+Tatap+Muka",
       title: "Pelatihan Akuntansi Batch 1",
@@ -143,13 +175,13 @@ export default function App() {
     }
   ]);
 
-  const [team, setTeam] = useState<any[]>([
+  const [team, setTeam] = useState<TeamMember[]>([
     { name: "Adhwa Neisya", role: "Accounting & Tax", job: "Accounting & Tax", img: "" },
     { name: "Chelsea Hamid", role: "Tax Specialist", job: "Tax Specialist", img: "" },
     { name: "Lucas Abraham", role: "Accounting Specialist", job: "Accounting Specialist", img: "" }
   ]);
 
-  // --- LOGIKA SINKRONISASI DIAM-DIAM ---
+  // --- LOGIKA SINKRONISASI DIAM-DIAM & ANTI-CRASH ---
   useEffect(() => {
     let isMounted = true;
 
@@ -157,27 +189,44 @@ export default function App() {
       try {
         const response = await fetch(GAS_URL);
         const textResponse = await response.text(); 
-        const json = JSON.parse(textResponse);
         
-        if (isMounted && json.status === 'success' && json.data) {
-          const d = json.data;
-          if (d['Tentang Kami'] && d['Tentang Kami'].image) setAboutImg(d['Tentang Kami'].image);
+        try {
+          const json = JSON.parse(textResponse);
           
-          if (d['Video Profil']) {
-            let rawUrl = typeof d['Video Profil'] === 'object' ? String(d['Video Profil'].url) : String(d['Video Profil']);
-            rawUrl = rawUrl.replace(/\\/g, "").split('"')[0].split(' ')[0]; 
-            if (rawUrl.includes('youtu.be/')) rawUrl = rawUrl.replace('youtu.be/', 'www.youtube.com/embed/').split('?')[0];
-            else if (rawUrl.includes('watch?v=')) rawUrl = rawUrl.replace('watch?v=', 'embed/').split('&')[0];
-            setVideoUrl(rawUrl);
+          if (isMounted && json?.status === 'success' && json?.data) {
+            const d = json.data;
+            
+            // Pengaman Optional Chaining (?.) untuk menghindari crash Cannot read property
+            if (d?.['Tentang Kami']?.image) {
+               setAboutImg(d['Tentang Kami'].image);
+            }
+            
+            if (d?.['Video Profil']) {
+              let rawUrl = typeof d['Video Profil'] === 'object' ? String(d['Video Profil']?.url || "") : String(d['Video Profil']);
+              if (rawUrl) {
+                rawUrl = rawUrl.replace(/\\/g, "").split('"')[0].split(' ')[0]; 
+                if (rawUrl.includes('youtu.be/')) rawUrl = rawUrl.replace('youtu.be/', 'www.youtube.com/embed/').split('?')[0];
+                else if (rawUrl.includes('watch?v=')) rawUrl = rawUrl.replace('watch?v=', 'embed/').split('&')[0];
+                setVideoUrl(rawUrl);
+              }
+            }
+            
+            if (Array.isArray(d?.['Testimoni']) && d['Testimoni'].length > 0) {
+               setTestimonials(d['Testimoni']);
+            }
+            if (Array.isArray(d?.['Dokumentasi']) && d['Dokumentasi'].length > 0) {
+               setDocs(d['Dokumentasi']);
+            }
+            if (Array.isArray(d?.['Tim Praktisi']) && d['Tim Praktisi'].length > 0) {
+               setTeam(d['Tim Praktisi']);
+            }
           }
-          
-          if (Array.isArray(d['Testimoni']) && d['Testimoni'].length > 0) setTestimonials(d['Testimoni']);
-          if (Array.isArray(d['Dokumentasi']) && d['Dokumentasi'].length > 0) setDocs(d['Dokumentasi']);
-          if (Array.isArray(d['Tim Praktisi']) && d['Tim Praktisi'].length > 0) setTeam(d['Tim Praktisi']);
+        } catch (parseError) {
+          // Gagal parse JSON (biasanya karena terblokir halaman login Google CORS)
+          // Diam-diam saja, UI tetap jalan.
         }
       } catch (error) {
-        // Gagal Diam-diam: Tidak ada console.error lagi. 
-        // Biarkan website tetap berjalan cantik dengan data default di atas.
+        // Gagal fetch karena jaringan dll. Diam-diam saja.
       }
     };
 
@@ -210,11 +259,12 @@ export default function App() {
 
   // --- ANTI COPY/INSPECT ---
   useEffect(() => {
-    const handleKeyDown = (e: any) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && ['c', 'u', 's'].includes(e.key.toLowerCase())) e.preventDefault();
       if (e.key === 'F12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'i')) e.preventDefault();
     };
-    const handleDragStart = (e: any) => e.preventDefault();
+    const handleDragStart = (e: DragEvent) => e.preventDefault();
+    
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('dragstart', handleDragStart);
     return () => {
