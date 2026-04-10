@@ -176,12 +176,8 @@ export default function App() {
 
     const fetchDatabase = async () => {
       try {
-        // Menggunakan mode cors dengan konfigurasi standar untuk mencegah preflight gagal
-        const response = await fetch(GAS_URL, {
-          method: 'GET',
-          redirect: 'follow',
-          cache: 'no-store' // Mencegah cache browser
-        });
+        // Menggunakan fetch sederhana persis seperti Admin Dashboard agar tidak kena blokir CORS (Preflight)
+        const response = await fetch(`${GAS_URL}?t=${new Date().getTime()}`);
 
         if (!response.ok) throw new Error("Gagal terhubung ke database");
         
@@ -189,9 +185,16 @@ export default function App() {
         
         if (isMounted && json.status === 'success' && json.data) {
           const d = json.data;
+          
           // Timpa data statis dengan data dinamis JIKA datanya ada
           if (d['Tentang Kami']?.image) setAboutImg(d['Tentang Kami'].image);
-          if (d['Video Profil']?.url) setVideoUrl(d['Video Profil'].url);
+          
+          if (d['Video Profil']?.url) {
+            // Mencegah error jika user tidak sengaja mem-paste embel-embel tag HTML (seperti atribut title="...")
+            const cleanUrl = d['Video Profil'].url.split('"')[0].split(' ')[0];
+            setVideoUrl(cleanUrl);
+          }
+          
           if (d['Testimoni'] && d['Testimoni'].length > 0) setTestimonials(d['Testimoni']);
           if (d['Dokumentasi'] && d['Dokumentasi'].length > 0) setDocs(d['Dokumentasi']);
           if (d['Tim Praktisi'] && d['Tim Praktisi'].length > 0) setTeam(d['Tim Praktisi']);
