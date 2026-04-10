@@ -137,13 +137,14 @@ export default function App() {
   const [aboutImg, setAboutImg] = useState("");
   const [videoUrl, setVideoUrl] = useState("https://www.youtube.com/embed/tgbNymZ7vqY");
   
-  const [testimonials, setTestimonials] = useState([
+  // Menggunakan any[] agar TypeScript tidak bingung antara 'role' dan 'job'
+  const [testimonials, setTestimonials] = useState<any[]>([
     { name: "Rina Kartika", text: "Pembukuan usaha saya jadi jauh lebih rapi dan terorganisir.", role: "Business Owner" },
     { name: "Ahmad Fauzan", text: "Sekarang saya lebih paham akuntansi dan sudah dapat kerja.", role: "Alumni Kelas" },
     { name: "Dwi Santoso", text: "Timnya profesional dan sangat membantu kelancaran bisnis kami.", role: "CEO" }
   ]);
 
-  const [docs, setDocs] = useState([
+  const [docs, setDocs] = useState<any[]>([
     {
       img: "https://placehold.co/800x500/1e293b/f97316?text=Kelas+Tatap+Muka",
       title: "Pelatihan Akuntansi Batch 1",
@@ -161,7 +162,7 @@ export default function App() {
     }
   ]);
 
-  const [team, setTeam] = useState([
+  const [team, setTeam] = useState<any[]>([
     { name: "Adhwa Neisya", role: "Accounting & Tax", img: "" },
     { name: "Chelsea Hamid", role: "Tax Specialist", img: "" },
     { name: "Lucas Abraham", role: "Accounting Specialist", img: "" }
