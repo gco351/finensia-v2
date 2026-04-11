@@ -20,7 +20,9 @@ import {
   Eye,
   EyeOff,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  Settings,
+  Link2
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -33,17 +35,27 @@ export default function AdminDashboard() {
   const [loginError, setLoginError] = useState("");
 
   // App States
-  const [activeTab, setActiveTab] = useState("tentang");
+  const [activeTab, setActiveTab] = useState("pengaturan");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
+  
+  // FIX BUG: Sistem reset key agar input file tidak mereset dirinya sendiri saat dipilih
+  const [resetKey, setResetKey] = useState(Date.now());
 
   // Data States
+  const [logoImg, setLogoImg] = useState("");
+  const [logoFile, setLogoFile] = useState(null);
   const [tentangImg, setTentangImg] = useState("");
   const [tentangFile, setTentangFile] = useState(null);
   const [videoUrl, setVideoUrl] = useState("");
   const [testimoni, setTestimoni] = useState([]);
   const [dokumentasi, setDokumentasi] = useState([]);
   const [tim, setTim] = useState([]);
+  
+  // Link States
+  const [waLink, setWaLink] = useState("");
+  const [kelas1Link, setKelas1Link] = useState("");
+  const [kelas2Link, setKelas2Link] = useState("");
 
   // Form States for adding new items
   const [newTesti, setNewTesti] = useState({ name: "", role: "", text: "" });
@@ -56,7 +68,6 @@ export default function AdminDashboard() {
 
   // --- SESSION RESTORE ---
   useEffect(() => {
-    // Cek apakah sebelumnya sudah login (agar tidak logout saat refresh F5)
     const savedToken = sessionStorage.getItem('adminToken');
     if (savedToken) {
       setAuthToken(savedToken);
@@ -69,7 +80,6 @@ export default function AdminDashboard() {
     if (!supabaseUrl || !supabaseKey) return [];
     try {
       const res = await fetch(`${supabaseUrl}/rest/v1/${tableName}?select=*`, {
-        // Fetch menggunakan token akses jika ada (untuk menembus RLS), jika tidak pakai anon key
         headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${authToken || supabaseKey}` }
       });
       if (!res.ok) throw new Error("Gagal fetch data");
@@ -86,7 +96,7 @@ export default function AdminDashboard() {
         method: 'POST',
         headers: { 
           'apikey': supabaseKey, 
-          'Authorization': `Bearer ${authToken}`, // Wajib menggunakan Token Auth (Keamanan Super Ketat)
+          'Authorization': `Bearer ${authToken}`, 
           'Content-Type': 'application/json',
           'Prefer': 'return=minimal'
         },
@@ -112,7 +122,6 @@ export default function AdminDashboard() {
 
   const updateSingleData = async (tableName, data) => {
     try {
-      // FIX BUG 2: Hapus data secara spesifik menggunakan ID agar Supabase tidak memblokir (Error 400)
       const existingData = await fetchTable(tableName);
       for (const row of existingData) {
         if (row.id) {
@@ -127,7 +136,6 @@ export default function AdminDashboard() {
 
   const uploadImage = async (file) => {
     if (!file) return null;
-    // FIX BUG 3: Gunakan huruf besar sesuai screenshot, dengan fallback huruf kecil
     let bucketName = 'IMAGES';
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
@@ -143,7 +151,6 @@ export default function AdminDashboard() {
         body: file
       });
 
-      // Fallback otomatis ke 'images' (huruf kecil) jika 'IMAGES' gagal ditemukan
       if (!res.ok && (res.status === 400 || res.status === 404)) {
         bucketName = 'images';
         res = await fetch(`${supabaseUrl}/storage/v1/object/${bucketName}/${fileName}`, {
@@ -168,16 +175,27 @@ export default function AdminDashboard() {
   // --- LOAD DATA ---
   const loadAllData = async () => {
     setIsLoading(true);
-    const [dTentang, dVideo, dTesti, dDok, dTim] = await Promise.all([
+    const [dTentang, dVideo, dTesti, dDok, dTim, dPengaturan, dLink] = await Promise.all([
       fetchTable('tentang_kami'),
       fetchTable('video_profil'),
       fetchTable('testimoni'),
       fetchTable('dokumentasi'),
-      fetchTable('tim_praktisi')
+      fetchTable('tim_praktisi'),
+      fetchTable('pengaturan_web'), 
+      fetchTable('pengaturan_link')
     ]);
 
-    if (dTentang.length > 0) setTentangImg(dTentang[0].img || dTentang[0].image || "");
-    if (dVideo.length > 0) setVideoUrl(dVideo[0].url || "");
+    if (dTentang && dTentang.length > 0) setTentangImg(dTentang[0].img || dTentang[0].image || "");
+    if (dVideo && dVideo.length > 0) setVideoUrl(dVideo[0].url || "");
+    
+    if (dPengaturan && dPengaturan.length > 0) setLogoImg(dPengaturan[0].logo || dPengaturan[0].logo_url || "");
+    
+    if (dLink && dLink.length > 0) {
+      setWaLink(dLink[0].wa_umum || "");
+      setKelas1Link(dLink[0].kelas_1 || "");
+      setKelas2Link(dLink[0].kelas_2 || "");
+    }
+
     setTestimoni(dTesti || []);
     setDokumentasi(dDok || []);
     setTim(dTim || []);
@@ -195,7 +213,6 @@ export default function AdminDashboard() {
     setLoginError("");
 
     try {
-      // Memanggil otentikasi REST API bawaan Supabase
       const res = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
         method: 'POST',
         headers: {
@@ -211,7 +228,6 @@ export default function AdminDashboard() {
         throw new Error(data.error_description || data.msg || "Kredensial tidak valid.");
       }
 
-      // Simpan Token Keamanan
       setAuthToken(data.access_token);
       sessionStorage.setItem('adminToken', data.access_token);
       setIsLoggedIn(true);
@@ -236,6 +252,61 @@ export default function AdminDashboard() {
   };
 
   // --- DATA HANDLERS ---
+
+  const saveLogo = async () => {
+    setIsLoading(true);
+    let finalImgUrl = logoImg;
+    
+    if (logoFile) {
+      const uploadedUrl = await uploadImage(logoFile);
+      if (uploadedUrl) {
+        finalImgUrl = uploadedUrl;
+        setLogoImg(uploadedUrl);
+        setLogoFile(null);
+      } else {
+        showMessage("Gagal mengunggah logo!", "error");
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    const success = await updateSingleData('pengaturan_web', { logo: finalImgUrl });
+    if (success) {
+      showMessage("Logo website berhasil disimpan!");
+      setResetKey(Date.now()); // Reset input file visualnya setelah sukses
+    } else {
+      showMessage("Gagal menyimpan ke database! Pastikan tabel pengaturan_web sudah dibuat.", "error");
+    }
+    setIsLoading(false);
+  };
+
+  const deleteLogo = async () => {
+    if (!window.confirm("Yakin ingin menghapus logo ini dan mengembalikan ke teks default?")) return;
+    setIsLoading(true);
+    const success = await updateSingleData('pengaturan_web', { logo: "" });
+    if (success) {
+      setLogoImg("");
+      setLogoFile(null);
+      setResetKey(Date.now());
+      showMessage("Logo berhasil dihapus!");
+    } else {
+      showMessage("Gagal menghapus logo!", "error");
+    }
+    setIsLoading(false);
+  };
+
+  const saveLinks = async () => {
+    setIsLoading(true);
+    const dataToSave = {
+      wa_umum: waLink,
+      kelas_1: kelas1Link,
+      kelas_2: kelas2Link
+    };
+    const success = await updateSingleData('pengaturan_link', dataToSave);
+    success ? showMessage("Link tombol berhasil diperbarui!") : showMessage("Gagal menyimpan ke database! Pastikan tabel pengaturan_link sudah dibuat.", "error");
+    setIsLoading(false);
+  };
+
   const saveTentang = async () => {
     setIsLoading(true);
     let finalImgUrl = tentangImg;
@@ -253,9 +324,13 @@ export default function AdminDashboard() {
       }
     }
 
-    // FIX BUG 1: Gunakan 'image' (bukan 'img') sesuai struktur tabel tentang_kami di Supabase Anda
     const success = await updateSingleData('tentang_kami', { image: finalImgUrl });
-    success ? showMessage("Foto Tentang Kami berhasil disimpan!") : showMessage("Gagal menyimpan!", "error");
+    if (success) {
+      showMessage("Foto Tentang Kami berhasil disimpan!");
+      setResetKey(Date.now()); // Reset input file visualnya setelah sukses
+    } else {
+      showMessage("Gagal menyimpan!", "error");
+    }
     setIsLoading(false);
   };
 
@@ -301,6 +376,7 @@ export default function AdminDashboard() {
     if (success) {
       showMessage("Dokumentasi ditambahkan!");
       setNewDoc({ title: "", desc: "", img: "", file: null });
+      setResetKey(Date.now()); // Reset input file visualnya setelah sukses
       loadAllData();
     } else {
       showMessage("Gagal menambahkan dokumentasi!", "error");
@@ -329,6 +405,7 @@ export default function AdminDashboard() {
     if (success) {
       showMessage("Anggota tim ditambahkan!");
       setNewTeam({ name: "", role: "", img: "", file: null });
+      setResetKey(Date.now()); // Reset input file visualnya setelah sukses
       loadAllData();
     } else {
       showMessage("Gagal menambahkan tim!", "error");
@@ -337,7 +414,7 @@ export default function AdminDashboard() {
   };
 
   const handleDelete = async (table, id) => {
-    if (!confirm("Yakin ingin menghapus data ini?")) return;
+    if (!window.confirm("Yakin ingin menghapus data ini?")) return;
     setIsLoading(true);
     const success = await deleteData(table, id);
     success ? showMessage("Data terhapus!") : showMessage("Gagal menghapus data!", "error");
@@ -349,7 +426,6 @@ export default function AdminDashboard() {
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center font-inter p-6 relative overflow-hidden">
-        {/* Decorative Background */}
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-orange-600/20 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
         
@@ -434,6 +510,8 @@ export default function AdminDashboard() {
 
   // --- MAIN DASHBOARD ---
   const tabs = [
+    { id: "pengaturan", name: "Pengaturan Logo", icon: <Settings size={18} /> },
+    { id: "tombol", name: "Pengaturan Link", icon: <Link2 size={18} /> },
     { id: "tentang", name: "Tentang Kami", icon: <ImageIcon size={18} /> },
     { id: "video", name: "Video Profil", icon: <Video size={18} /> },
     { id: "testimoni", name: "Testimoni", icon: <MessageSquare size={18} /> },
@@ -491,12 +569,110 @@ export default function AdminDashboard() {
             </div>
           )}
 
+          {/* TAB: PENGATURAN WEB (LOGO) */}
+          {activeTab === "pengaturan" && (
+            <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100">
+              <div className="mb-6 pb-6 border-b border-slate-100 flex justify-between items-end">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-800">Logo Website</h3>
+                  <p className="text-sm text-slate-500">Ganti logo pada header dan footer.</p>
+                </div>
+                {logoImg && (
+                  <button onClick={deleteLogo} disabled={isLoading} className="text-red-500 hover:bg-red-50 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 transition-colors">
+                    <Trash2 size={16} /> Hapus Logo
+                  </button>
+                )}
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center">
+                <div className="flex-1 w-full">
+                  <input 
+                    key={`logo-${resetKey}`}
+                    type="file" 
+                    accept="image/*"
+                    onChange={(e) => setLogoFile(e.target.files?.[0] || null)} 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100 transition-all cursor-pointer"
+                  />
+                  {logoFile && (
+                    <p className="text-xs text-blue-500 mt-3 flex items-center gap-1.5 bg-blue-50 p-2 rounded-lg inline-block">
+                      <UploadCloud size={14} /> File siap diunggah: <strong>{logoFile.name}</strong>
+                    </p>
+                  )}
+                </div>
+                
+                <button onClick={saveLogo} disabled={isLoading || !logoFile} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-md">
+                  {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} Simpan Logo
+                </button>
+              </div>
+              
+              {logoImg && !logoFile && (
+                <div className="mt-8 p-6 rounded-2xl bg-slate-900 inline-block border border-slate-700 shadow-inner">
+                  <p className="text-slate-400 text-xs font-medium mb-3 uppercase tracking-wider">Logo Aktif Saat Ini</p>
+                  <img src={logoImg} alt="Preview Logo" className="h-12 w-auto object-contain bg-white/10 p-2 rounded-lg" />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB: PENGATURAN LINK (BARU) */}
+          {activeTab === "tombol" && (
+            <div className="space-y-8">
+              <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100">
+                <div className="mb-6 pb-6 border-b border-slate-100">
+                  <h3 className="text-lg font-bold text-slate-800">Pengaturan Tombol WhatsApp & Kelas</h3>
+                  <p className="text-sm text-slate-500">Ubah link tautan untuk masing-masing tombol pendaftaran atau kontak.</p>
+                </div>
+
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">1. Link Ikon WhatsApp / Hubungi Kami</label>
+                    <input 
+                      type="text" 
+                      value={waLink} 
+                      onChange={(e) => setWaLink(e.target.value)} 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 focus:outline-blue-500"
+                      placeholder="https://wa.me/628..."
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1.5 ml-1">Ini adalah link utama untuk tombol "Hubungi Kami" dan Icon Floating WA.</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">2. Link Pendaftaran Kelas 1 (Professional)</label>
+                    <input 
+                      type="text" 
+                      value={kelas1Link} 
+                      onChange={(e) => setKelas1Link(e.target.value)} 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 focus:outline-blue-500"
+                      placeholder="https://wa.me/628... atau link gform"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">3. Link Pendaftaran Kelas 2 (Intensive)</label>
+                    <input 
+                      type="text" 
+                      value={kelas2Link} 
+                      onChange={(e) => setKelas2Link(e.target.value)} 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 focus:outline-blue-500"
+                      placeholder="https://wa.me/628... atau link gform"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end">
+                  <button onClick={saveLinks} disabled={isLoading} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-md">
+                    {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} Simpan Semua Link
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* TAB: TENTANG KAMI */}
           {activeTab === "tentang" && (
             <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100">
               <label className="block text-sm font-bold text-slate-700 mb-3">Upload Gambar Tentang Kami</label>
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                 <input 
+                  key={`tentang-${resetKey}`}
                   type="file" 
                   accept="image/*"
                   onChange={(e) => setTentangFile(e.target.files?.[0] || null)} 
@@ -555,8 +731,8 @@ export default function AdminDashboard() {
                   <input type="text" value={newTesti.name} onChange={e=>setNewTesti({...newTesti, name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500" placeholder="Contoh: Budi Santoso" required />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Peran / Jabatan</label>
-                  <input type="text" value={newTesti.role} onChange={e=>setNewTesti({...newTesti, role: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500" placeholder="Contoh: CEO PT Maju Mundur" required />
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Peran / Jabatan (Misal: Business Owner)</label>
+                  <input type="text" value={newTesti.role} onChange={e=>setNewTesti({...newTesti, role: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500" placeholder="Contoh: Business Owner" required />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Isi Testimoni</label>
@@ -602,14 +778,15 @@ export default function AdminDashboard() {
           {activeTab === "dokumentasi" && (
             <div className="space-y-8">
               <form onSubmit={addDoc} className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 grid gap-5">
-                <div><h3 className="font-bold text-xl text-slate-800 border-b border-slate-100 pb-3">Tambah Foto Dokumentasi</h3></div>
+                <div><h3 className="font-bold text-xl text-slate-800 border-b border-slate-100 pb-3">Tambah Dokumentasi Baru</h3></div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Judul Kegiatan</label>
-                  <input type="text" value={newDoc.title} onChange={e=>setNewDoc({...newDoc, title: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500" placeholder="Contoh: Webinar Perpajakan" required />
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Judul Kegiatan (Misal: Webinar Tax Planning)</label>
+                  <input type="text" value={newDoc.title} onChange={e=>setNewDoc({...newDoc, title: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500" placeholder="Judul Dokumentasi" required />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Upload Foto</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Upload Foto Kegiatan</label>
                   <input 
+                    key={`doc-${resetKey}`}
                     type="file" 
                     accept="image/*"
                     onChange={e=>setNewDoc({...newDoc, file: e.target.files?.[0] || null})} 
@@ -618,7 +795,7 @@ export default function AdminDashboard() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Deskripsi Singkat</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Deskripsi Singkat (Misal: Berbagi insight...)</label>
                   <textarea value={newDoc.desc} onChange={e=>setNewDoc({...newDoc, desc: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 h-24 resize-none focus:outline-orange-500" placeholder="Deskripsikan kegiatan ini..."></textarea>
                 </div>
                 <div className="mt-2">
@@ -653,18 +830,19 @@ export default function AdminDashboard() {
           {activeTab === "tim" && (
             <div className="space-y-8">
               <form onSubmit={addTeam} className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 grid md:grid-cols-2 gap-5">
-                <div className="md:col-span-2"><h3 className="font-bold text-xl text-slate-800 border-b border-slate-100 pb-3">Tambah Tim Praktisi</h3></div>
+                <div className="md:col-span-2"><h3 className="font-bold text-xl text-slate-800 border-b border-slate-100 pb-3">Tambah Praktisi</h3></div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Nama Lengkap</label>
                   <input type="text" value={newTeam.name} onChange={e=>setNewTeam({...newTeam, name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500" placeholder="Nama anggota" required />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Peran (Role)</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Kategori Job (Misal: Tax/Accounting)</label>
                   <input type="text" value={newTeam.role} onChange={e=>setNewTeam({...newTeam, role: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500" placeholder="Contoh: Tax Specialist" required />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Upload Foto Profil</label>
                   <input 
+                    key={`team-${resetKey}`}
                     type="file" 
                     accept="image/*"
                     onChange={e=>setNewTeam({...newTeam, file: e.target.files?.[0] || null})} 
@@ -674,7 +852,7 @@ export default function AdminDashboard() {
                 </div>
                 <div className="md:col-span-2 mt-2">
                   <button type="submit" disabled={isLoading} className="w-full bg-orange-500 hover:bg-orange-600 text-white px-6 py-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-all shadow-lg shadow-orange-500/20 disabled:opacity-70">
-                    {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />} Tambahkan Ke Tim
+                    {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />} Tambahkan Praktisi
                   </button>
                 </div>
               </form>
