@@ -499,7 +499,7 @@ export default function AdminDashboard() {
                 <input 
                   type="file" 
                   accept="image/*"
-                  onChange={(e) => setTentangFile(e.target.files[0])} 
+                  onChange={(e) => setTentangFile(e.target.files?.[0] || null)} 
                   className="flex-1 w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100 transition-all cursor-pointer"
                 />
                 <button onClick={saveTentang} disabled={isLoading || (!tentangFile && !tentangImg)} className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white px-8 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-md">
@@ -590,7 +590,7 @@ export default function AdminDashboard() {
                           </td>
                         </tr>
                       ))}
-                      {testimoni.length === 0 && <tr><td colSpan="3" className="p-8 text-center text-slate-400 italic">Belum ada data testimoni.</td></tr>}
+                      {testimoni.length === 0 && <tr><td colSpan={3} className="p-8 text-center text-slate-400 italic">Belum ada data testimoni.</td></tr>}
                     </tbody>
                   </table>
                 </div>
@@ -612,7 +612,7 @@ export default function AdminDashboard() {
                   <input 
                     type="file" 
                     accept="image/*"
-                    onChange={e=>setNewDoc({...newDoc, file: e.target.files[0]})} 
+                    onChange={e=>setNewDoc({...newDoc, file: e.target.files?.[0] || null})} 
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100 cursor-pointer" 
                     required 
                   />
@@ -667,7 +667,7 @@ export default function AdminDashboard() {
                   <input 
                     type="file" 
                     accept="image/*"
-                    onChange={e=>setNewTeam({...newTeam, file: e.target.files[0]})} 
+                    onChange={e=>setNewTeam({...newTeam, file: e.target.files?.[0] || null})} 
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100 cursor-pointer" 
                   />
                   <p className="text-[10px] text-slate-400 mt-2">Disarankan menggunakan rasio 1:1 (persegi) agar terlihat rapi.</p>
