@@ -23,6 +23,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
+// --- TYPES & INTERFACES ---
 type MessageType = "success" | "error" | "";
 
 type MessageState = {
@@ -96,7 +97,7 @@ export default function AdminDashboard() {
   const [dokumentasi, setDokumentasi] = useState<DokumenItem[]>([]);
   const [tim, setTim] = useState<TeamItem[]>([]);
 
-  // Form States for adding new items
+  // Form States
   const [newTesti, setNewTesti] = useState({ name: "", role: "", text: "" });
   const [newDoc, setNewDoc] = useState<UploadForm>({
     title: "",
@@ -112,14 +113,8 @@ export default function AdminDashboard() {
   });
 
   // Environment Variables
-  const supabaseUrl =
-    typeof process !== "undefined" && process.env
-      ? process.env.NEXT_PUBLIC_SUPABASE_URL || ""
-      : "";
-  const supabaseKey =
-    typeof process !== "undefined" && process.env
-      ? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-      : "";
+  const supabaseUrl = typeof process !== "undefined" && process.env ? process.env.NEXT_PUBLIC_SUPABASE_URL || "" : "";
+  const supabaseKey = typeof process !== "undefined" && process.env ? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "" : "";
 
   // --- SESSION RESTORE ---
   useEffect(() => {
@@ -198,7 +193,10 @@ export default function AdminDashboard() {
 
   const uploadImage = async (file: File | null) => {
     if (!file) return null;
-    const bucketName = "images";
+    
+    // --- UPDATE: DISESUAIKAN DENGAN NAMA BUCKET ANDA ---
+    const bucketName = "IMAGES"; 
+    
     const fileExt = file.name.split(".").pop();
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
 
@@ -221,7 +219,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // --- LOAD DATA ---
+  // --- DATA LOADING ---
   const loadAllData = async () => {
     setIsLoading(true);
     const [dTentang, dVideo, dTesti, dDok, dTim] = await Promise.all([
@@ -232,8 +230,8 @@ export default function AdminDashboard() {
       fetchTable("tim_praktisi"),
     ]);
 
-    if (dTentang.length > 0) setTentangImg(dTentang[0].img || dTentang[0].image || "");
-    if (dVideo.length > 0) setVideoUrl(dVideo[0].url || "");
+    if (dTentang && dTentang.length > 0) setTentangImg(dTentang[0].img || dTentang[0].image || "");
+    if (dVideo && dVideo.length > 0) setVideoUrl(dVideo[0].url || "");
     setTestimoni(dTesti || []);
     setDokumentasi(dDok || []);
     setTim(dTim || []);
@@ -290,7 +288,7 @@ export default function AdminDashboard() {
     setTimeout(() => setMessage({ text: "", type: "" }), 3000);
   };
 
-  // --- DATA HANDLERS ---
+  // --- CRUD HANDLERS ---
   const saveTentang = async () => {
     setIsLoading(true);
     let finalImgUrl = tentangImg;
@@ -391,7 +389,7 @@ export default function AdminDashboard() {
   };
 
   const handleDelete = async (table: string, id: number) => {
-    if (!confirm("Yakin ingin menghapus data ini?")) return;
+    if (!window.confirm("Yakin ingin menghapus data ini?")) return;
     setIsLoading(true);
     const success = await deleteData(table, id);
     success ? showMessage("Data terhapus!") : showMessage("Gagal menghapus data!", "error");
@@ -399,10 +397,10 @@ export default function AdminDashboard() {
     setIsLoading(false);
   };
 
-  // --- LOGIN SCREEN ---
+  // --- LOGIN UI ---
   if (!isLoggedIn) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center font-inter p-6 relative overflow-hidden">
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center font-sans p-6 relative overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-orange-600/20 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -473,20 +471,12 @@ export default function AdminDashboard() {
               {isLoading ? <Loader2 size={20} className="animate-spin" /> : "Masuk ke Dashboard"}
             </button>
           </form>
-
-          {!supabaseUrl && (
-            <div className="mt-6 bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-xl flex items-start gap-3">
-              <AlertCircle className="text-yellow-500 flex-shrink-0 mt-0.5" size={16} />
-              <p className="text-yellow-500 text-xs leading-relaxed">
-                Sistem keamanan Supabase belum dikonfigurasi di file environment Anda.
-              </p>
-            </div>
-          )}
         </div>
       </div>
     );
   }
 
+  // --- DASHBOARD UI ---
   const tabs = [
     { id: "tentang", name: "Tentang Kami", icon: <ImageIcon size={18} /> },
     { id: "video", name: "Video Profil", icon: <Video size={18} /> },
@@ -496,7 +486,8 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 font-inter flex flex-col md:flex-row">
+    <div className="min-h-screen bg-slate-50 font-sans flex flex-col md:flex-row">
+      {/* SIDEBAR */}
       <aside className="w-full md:w-64 bg-slate-900 text-slate-300 md:min-h-screen flex flex-col flex-shrink-0">
         <div className="p-6 border-b border-slate-800 flex items-center gap-3">
           <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
@@ -557,6 +548,7 @@ export default function AdminDashboard() {
             </div>
           )}
 
+          {/* TAB: TENTANG KAMI */}
           {activeTab === "tentang" && (
             <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100">
               <label className="block text-sm font-bold text-slate-700 mb-3">Upload Gambar Tentang Kami</label>
@@ -582,15 +574,13 @@ export default function AdminDashboard() {
               )}
               {tentangImg && !tentangFile && (
                 <div className="mt-8 rounded-2xl overflow-hidden border-4 border-slate-100 max-w-sm relative group">
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <p className="text-white text-sm font-medium">Gambar Aktif Saat Ini</p>
-                  </div>
                   <img src={tentangImg} alt="Preview" className="w-full h-auto" />
                 </div>
               )}
             </div>
           )}
 
+          {/* TAB: VIDEO PROFIL */}
           {activeTab === "video" && (
             <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100">
               <label className="block text-sm font-bold text-slate-700 mb-3">URL YouTube Embed</label>
@@ -599,7 +589,7 @@ export default function AdminDashboard() {
                   type="text"
                   value={videoUrl}
                   onChange={(e) => setVideoUrl(e.target.value)}
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-5 py-3.5 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all"
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-5 py-3.5 focus:outline-none focus:border-orange-500 transition-all"
                   placeholder="https://www.youtube.com/embed/EJozdWEAdus"
                 />
                 <button
@@ -610,13 +600,10 @@ export default function AdminDashboard() {
                   {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} Simpan
                 </button>
               </div>
-              <p className="text-xs text-slate-500 mt-3 flex items-center gap-1.5 bg-slate-50 p-3 rounded-lg inline-block border border-slate-100">
-                <AlertCircle size={14} className="text-blue-500" />
-                Format yang benar: <strong>https://www.youtube.com/embed/ID_VIDEO_ANDA</strong>
-              </p>
             </div>
           )}
 
+          {/* TAB: TESTIMONI */}
           {activeTab === "testimoni" && (
             <div className="space-y-8">
               <form onSubmit={addTesti} className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 grid md:grid-cols-2 gap-5">
@@ -630,18 +617,16 @@ export default function AdminDashboard() {
                     value={newTesti.name}
                     onChange={(e) => setNewTesti({ ...newTesti, name: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500"
-                    placeholder="Contoh: Budi Santoso"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Peran / Jabatan</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Peran</label>
                   <input
                     type="text"
                     value={newTesti.role}
                     onChange={(e) => setNewTesti({ ...newTesti, role: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500"
-                    placeholder="Contoh: CEO PT Maju Mundur"
                     required
                   />
                 </div>
@@ -650,213 +635,124 @@ export default function AdminDashboard() {
                   <textarea
                     value={newTesti.text}
                     onChange={(e) => setNewTesti({ ...newTesti, text: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 h-28 resize-none focus:outline-orange-500"
-                    placeholder="Tulis testimoni di sini..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 h-28 focus:outline-orange-500"
                     required
                   />
                 </div>
-                <div className="md:col-span-2 mt-2">
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white px-6 py-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-all shadow-lg shadow-orange-500/20 disabled:opacity-70"
-                  >
-                    {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />} Tambah Testimoni
+                <div className="md:col-span-2">
+                  <button type="submit" disabled={isLoading} className="w-full bg-orange-500 hover:bg-orange-600 text-white px-6 py-4 rounded-xl font-bold">
+                    Tambah Testimoni
                   </button>
                 </div>
               </form>
 
-              <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm">
-                    <thead className="bg-slate-50/80 text-slate-500 border-b border-slate-100">
-                      <tr>
-                        <th className="p-5 font-bold uppercase tracking-wider text-xs">Klien</th>
-                        <th className="p-5 font-bold uppercase tracking-wider text-xs">Testimoni</th>
-                        <th className="p-5 font-bold uppercase tracking-wider text-xs text-center w-20">Aksi</th>
+              <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-100">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-slate-50 text-slate-500">
+                    <tr>
+                      <th className="p-5 font-bold uppercase tracking-wider text-xs">Klien</th>
+                      <th className="p-5 font-bold uppercase tracking-wider text-xs">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {testimoni.map((item, i) => (
+                      <tr key={i}>
+                        <td className="p-5">
+                          <p className="font-bold text-slate-800">{item.name || item.nama}</p>
+                          <p className="text-xs text-slate-500">{item.role || item.job}</p>
+                        </td>
+                        <td className="p-5">
+                          <button onClick={() => handleDelete("testimoni", item.id)} className="text-red-500"><Trash2 size={18} /></button>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {testimoni.map((item, i) => (
-                        <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="p-5">
-                            <p className="font-bold text-slate-800">{item.name || item.nama}</p>
-                            <p className="text-xs text-orange-500 font-medium mt-0.5">{item.role || item.job}</p>
-                          </td>
-                          <td className="p-5 text-slate-600 italic">"{item.text || item.testimoni}"</td>
-                          <td className="p-5 text-center">
-                            <button
-                              onClick={() => handleDelete("testimoni", item.id)}
-                              className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-2.5 rounded-xl transition-all"
-                              title="Hapus Testimoni"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                      {testimoni.length === 0 && (
-                        <tr>
-                          <td colSpan={3} className="p-8 text-center text-slate-400 italic">
-                            Belum ada data testimoni.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
 
+          {/* TAB: DOKUMENTASI */}
           {activeTab === "dokumentasi" && (
             <div className="space-y-8">
               <form onSubmit={addDoc} className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 grid gap-5">
-                <div>
-                  <h3 className="font-bold text-xl text-slate-800 border-b border-slate-100 pb-3">Tambah Foto Dokumentasi</h3>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Judul Kegiatan</label>
-                  <input
-                    type="text"
-                    value={newDoc.title}
-                    onChange={(e) => setNewDoc({ ...newDoc, title: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500"
-                    placeholder="Contoh: Webinar Perpajakan"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Upload Foto</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setNewDoc({ ...newDoc, file: e.target.files?.[0] ?? null })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100 cursor-pointer"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Deskripsi Singkat</label>
-                  <textarea
-                    value={newDoc.desc}
-                    onChange={(e) => setNewDoc({ ...newDoc, desc: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 h-24 resize-none focus:outline-orange-500"
-                    placeholder="Deskripsikan kegiatan ini..."
-                  />
-                </div>
-                <div className="mt-2">
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white px-6 py-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-all shadow-lg shadow-orange-500/20 disabled:opacity-70"
-                  >
-                    {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />} Simpan Dokumentasi
-                  </button>
-                </div>
+                <h3 className="font-bold text-xl text-slate-800">Tambah Dokumentasi</h3>
+                <input
+                  type="text"
+                  placeholder="Judul Kegiatan"
+                  value={newDoc.title}
+                  onChange={(e) => setNewDoc({ ...newDoc, title: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
+                  required
+                />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setNewDoc({ ...newDoc, file: e.target.files?.[0] ?? null })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5"
+                  required
+                />
+                <button type="submit" disabled={isLoading} className="w-full bg-orange-500 text-white py-4 rounded-xl font-bold">
+                   Simpan Dokumentasi
+                </button>
               </form>
 
-              <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-5">
+              <div className="grid sm:grid-cols-3 gap-5">
                 {dokumentasi.map((item, i) => (
-                  <div key={i} className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden relative group">
-                    <div className="aspect-video w-full bg-slate-100 relative overflow-hidden">
-                      <img
-                        src={item.img || item.image || ""}
-                        alt={item.title || "Dokumentasi"}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-                        <button
-                          onClick={() => handleDelete("dokumentasi", item.id)}
-                          className="bg-red-500 hover:bg-red-600 text-white p-2.5 rounded-xl transition shadow-lg w-full flex justify-center items-center gap-2 font-bold text-sm"
-                        >
-                          <Trash2 size={16} /> Hapus
-                        </button>
-                      </div>
-                    </div>
-                    <div className="p-5">
-                      <h4 className="font-bold text-slate-800 mb-1.5 truncate text-sm">{item.title}</h4>
-                      <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{item.desc || item.deskripsi}</p>
-                    </div>
+                  <div key={i} className="bg-white rounded-3xl overflow-hidden shadow-sm relative group">
+                    <img src={item.img || item.image || ""} className="w-full h-40 object-cover" alt="" />
+                    <button onClick={() => handleDelete("dokumentasi", item.id)} className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
+          {/* TAB: TIM PRAKTISI */}
           {activeTab === "tim" && (
             <div className="space-y-8">
-              <form onSubmit={addTeam} className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 grid md:grid-cols-2 gap-5">
-                <div className="md:col-span-2">
-                  <h3 className="font-bold text-xl text-slate-800 border-b border-slate-100 pb-3">Tambah Tim Praktisi</h3>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Nama Lengkap</label>
-                  <input
-                    type="text"
-                    value={newTeam.name}
-                    onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500"
-                    placeholder="Nama anggota"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Peran (Role)</label>
-                  <input
-                    type="text"
-                    value={newTeam.role}
-                    onChange={(e) => setNewTeam({ ...newTeam, role: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500"
-                    placeholder="Contoh: Tax Specialist"
-                    required
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Upload Foto Profil</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setNewTeam({ ...newTeam, file: e.target.files?.[0] ?? null })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100 cursor-pointer"
-                  />
-                  <p className="text-[10px] text-slate-400 mt-2">Disarankan menggunakan rasio 1:1 (persegi) agar terlihat rapi.</p>
-                </div>
-                <div className="md:col-span-2 mt-2">
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white px-6 py-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-all shadow-lg shadow-orange-500/20 disabled:opacity-70"
-                  >
-                    {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />} Tambahkan Ke Tim
-                  </button>
-                </div>
+              <form onSubmit={addTeam} className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 grid gap-5">
+                <h3 className="font-bold text-xl text-slate-800">Tambah Anggota Tim</h3>
+                <input
+                  type="text"
+                  placeholder="Nama Lengkap"
+                  value={newTeam.name}
+                  onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
+                  required
+                />
+                <input
+                   type="text"
+                   placeholder="Peran (Role)"
+                   value={newTeam.role}
+                   onChange={(e) => setNewTeam({ ...newTeam, role: e.target.value })}
+                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
+                   required
+                />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setNewTeam({ ...newTeam, file: e.target.files?.[0] ?? null })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5"
+                />
+                <button type="submit" disabled={isLoading} className="w-full bg-orange-500 text-white py-4 rounded-xl font-bold">
+                   Tambahkan Ke Tim
+                </button>
               </form>
 
               <div className="grid sm:grid-cols-2 gap-5">
                 {tim.map((item, i) => (
-                  <div
-                    key={i}
-                    className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex items-center gap-4 relative group hover:border-orange-200 transition-colors"
-                  >
-                    <div className="w-14 h-14 rounded-2xl bg-slate-100 overflow-hidden flex items-center justify-center flex-shrink-0">
-                      {item.img || item.image ? (
-                        <img src={item.img || item.image || ""} className="w-full h-full object-cover" alt="" />
-                      ) : (
-                        <Users size={20} className="text-slate-400" />
-                      )}
+                  <div key={i} className="bg-white rounded-2xl shadow-sm p-4 flex items-center gap-4 relative group">
+                    <div className="w-12 h-12 rounded-xl bg-slate-100 overflow-hidden">
+                       {item.img || item.image ? <img src={item.img || item.image || ""} className="w-full h-full object-cover" alt="" /> : <Users className="m-auto text-slate-400" />}
                     </div>
-                    <div className="flex-1 pr-10">
-                      <h4 className="font-bold text-sm text-slate-800 truncate">{item.name || item.nama}</h4>
-                      <p className="text-xs text-orange-500 font-medium truncate mt-0.5">{item.role || item.job}</p>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-sm text-slate-800">{item.name || item.nama}</h4>
+                      <p className="text-xs text-orange-500">{item.role || item.job}</p>
                     </div>
-                    <button
-                      onClick={() => handleDelete("tim_praktisi", item.id)}
-                      className="absolute right-4 text-slate-300 hover:text-red-500 hover:bg-red-50 p-2.5 rounded-xl transition-all"
-                      title="Hapus Anggota"
-                    >
-                      <Trash2 size={18} />
-                    </button>
+                    <button onClick={() => handleDelete("tim_praktisi", item.id)} className="text-slate-300 hover:text-red-500"><Trash2 size={18} /></button>
                   </div>
                 ))}
               </div>
