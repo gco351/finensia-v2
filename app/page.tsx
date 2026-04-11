@@ -30,17 +30,18 @@ const styles = `
   .font-inter { font-family: 'Inter', sans-serif; }
   h1, h2, h3, h4, h5, h6, .font-jakarta { font-family: 'Plus Jakarta Sans', sans-serif; }
 
-  /* Icon Fall Animation */
-  @keyframes fall {
-    0% { transform: translateY(-10vh) rotate(0deg); opacity: 0; }
-    10% { opacity: 0.8; }
-    90% { opacity: 0.8; }
-    100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+  /* Icon Rain Animation - Diubah agar lurus dan terlihat seperti rintik hujan alami */
+  @keyframes rainFall {
+    0% { transform: translateY(-10vh); opacity: 0; }
+    10% { opacity: 0.5; }
+    80% { opacity: 0.5; }
+    100% { transform: translateY(110vh); opacity: 0; }
   }
+  
   .falling-icon {
     position: absolute;
-    animation: fall linear infinite;
-    color: rgba(249, 115, 22, 0.7); 
+    animation: rainFall linear infinite;
+    color: rgba(249, 115, 22, 0.4); /* Dibuat sedikit transparan agar elegan */
     z-index: 0;
   }
 
@@ -144,19 +145,22 @@ const fallbackTeam = [
   { name: "Lucas Abraham", role: "Accounting Specialist", img: "" }
 ];
 
-// --- KOMPONEN BACKGROUND ANIMASI ---
+// --- KOMPONEN BACKGROUND ANIMASI (Hujan Alami) ---
 const FallingBackground = () => {
   const [icons, setIcons] = useState([]);
 
   useEffect(() => {
     const iconTypes = ['dollar', 'calc', 'file', 'chart'];
-    const newIcons = Array.from({ length: 15 }).map((_, i) => ({
+    // Meningkatkan jumlah partikel hujan
+    const newIcons = Array.from({ length: 25 }).map((_, i) => ({
       id: i,
       type: iconTypes[Math.floor(Math.random() * iconTypes.length)],
       left: `${Math.random() * 100}%`,
-      animationDuration: `${Math.random() * 8 + 7}s`, 
+      // Durasi lebih cepat untuk efek hujan natural (antara 3 sampai 7 detik)
+      animationDuration: `${Math.random() * 4 + 3}s`, 
       animationDelay: `${Math.random() * 5}s`,
-      size: Math.random() * 15 + 15, 
+      // Ukuran lebih kecil
+      size: Math.random() * 10 + 12, 
     }));
     setIcons(newIcons);
   }, []);
@@ -192,6 +196,7 @@ export default function App() {
   const [imageKey, setImageKey] = useState(0); 
 
   // --- STATE DATA (Diinisialisasi dengan fallback untuk mencegah blank) ---
+  const [siteLogo, setSiteLogo] = useState("");
   const [aboutImg, setAboutImg] = useState("https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80");
   const [videoUrl, setVideoUrl] = useState("https://www.youtube.com/embed/EJozdWEAdus?rel=0");
   const [testimonials, setTestimonials] = useState(fallbackTestimonials);
@@ -230,15 +235,21 @@ export default function App() {
     };
 
     const loadDatabase = async () => {
-      const [dataTentang, dataVideo, dataTesti, dataDok, dataTim] = await Promise.all([
+      const [dataTentang, dataVideo, dataTesti, dataDok, dataTim, dataPengaturan] = await Promise.all([
         fetchTable('tentang_kami'),
         fetchTable('video_profil'),
         fetchTable('testimoni'),
         fetchTable('dokumentasi'),
-        fetchTable('tim_praktisi')
+        fetchTable('tim_praktisi'),
+        fetchTable('pengaturan_web') // Tabel Baru Untuk Logo
       ]);
 
       if (isMounted) {
+        // Render Logo Custom jika ada
+        if (Array.isArray(dataPengaturan) && dataPengaturan.length > 0) {
+          setSiteLogo(String(dataPengaturan[0].logo || dataPengaturan[0].logo_url || ""));
+        }
+
         if (Array.isArray(dataTentang) && dataTentang.length > 0) {
           setAboutImg(String(dataTentang[0].image || dataTentang[0].img_url || dataTentang[0].img || aboutImg));
         }
@@ -252,7 +263,7 @@ export default function App() {
           }
         }
         
-        // MAPPING DATA: Agar key dari Supabase selalu diseragamkan dengan tipe data Fallback (Mencegah TypeScript Error)
+        // MAPPING DATA
         if (Array.isArray(dataTesti) && dataTesti.length > 0) {
           setTestimonials(dataTesti.map(t => ({
             name: String(t.name || t.nama || ''),
@@ -328,11 +339,19 @@ export default function App() {
       <nav className={`fixed w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-[#0b1120]/90 backdrop-blur-lg border-b border-slate-800/50 py-2' : 'bg-transparent py-4'}`}>
         <div className="max-w-7xl mx-auto px-6">
           <div className="h-16 flex items-center justify-between transition-all">
+            
+            {/* LOGO SECTION */}
             <div className="flex items-center gap-2 group cursor-pointer">
-              <div className="w-9 h-9 bg-gradient-to-tr from-[#f97316] to-[#fb923c] rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform">
-                <TrendingUp className="text-white" size={20} />
-              </div>
-              <span className="text-2xl font-bold text-white tracking-tight font-jakarta">Finensia.</span>
+              {siteLogo ? (
+                <img src={siteLogo} alt="Logo Finensia" className="h-10 w-auto object-contain transition-transform group-hover:scale-105" />
+              ) : (
+                <>
+                  <div className="w-9 h-9 bg-gradient-to-tr from-[#f97316] to-[#fb923c] rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform">
+                    <TrendingUp className="text-white" size={20} />
+                  </div>
+                  <span className="text-2xl font-bold text-white tracking-tight font-jakarta">Finensia.</span>
+                </>
+              )}
             </div>
 
             <div className="hidden md:flex space-x-8 text-sm font-medium text-slate-300">
@@ -804,10 +823,16 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-6 opacity-90 hover:opacity-100 transition-opacity">
-              <div className="w-8 h-8 bg-gradient-to-br from-[#f97316] to-[#ea580c] rounded-lg flex items-center justify-center shadow-lg">
-                <TrendingUp className="text-white" size={16} />
-              </div>
-              <span className="text-xl font-bold text-white tracking-tight font-jakarta">Finensia.</span>
+              {siteLogo ? (
+                <img src={siteLogo} alt="Logo Finensia" className="h-8 w-auto object-contain" />
+              ) : (
+                <>
+                  <div className="w-8 h-8 bg-gradient-to-br from-[#f97316] to-[#ea580c] rounded-lg flex items-center justify-center shadow-lg">
+                    <TrendingUp className="text-white" size={16} />
+                  </div>
+                  <span className="text-xl font-bold text-white tracking-tight font-jakarta">Finensia.</span>
+                </>
+              )}
             </div>
             <p className="text-sm leading-relaxed max-w-sm">Solusi akuntansi dan perpajakan terpadu untuk percepatan skala bisnis Anda. Rapi, efisien, dan terstruktur.</p>
           </div>
