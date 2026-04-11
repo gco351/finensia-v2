@@ -191,7 +191,7 @@ export default function AdminDashboard() {
       fetchTable('testimoni'),
       fetchTable('dokumentasi'),
       fetchTable('tim_praktisi'),
-      fetchTable('pengaturan logo'), // Sesuai dengan DB Anda (pakai spasi)
+      fetchTable('pengaturan_logo'), 
       fetchTable('pengaturan_link')
     ]);
 
@@ -280,13 +280,12 @@ export default function AdminDashboard() {
       }
     }
 
-    // Menggunakan nama tabel "pengaturan logo" dan kolom "image"
-    const success = await updateSingleData('pengaturan logo', { image: finalImgUrl });
+    const success = await updateSingleData('pengaturan_logo', { image: finalImgUrl });
     if (success) {
       showMessage("Logo website berhasil disimpan!");
       setResetKey(Date.now()); 
     } else {
-      showMessage("Gagal menyimpan ke database!", "error");
+      showMessage("Gagal menyimpan ke database! Pastikan tabel pengaturan_logo sudah dibuat.", "error");
     }
     setIsLoading(false);
   };
@@ -295,7 +294,7 @@ export default function AdminDashboard() {
     if (!window.confirm("Yakin ingin menghapus logo ini?")) return;
     setIsLoading(true);
     
-    const success = await updateSingleData('pengaturan logo', { image: "" });
+    const success = await updateSingleData('pengaturan_logo', { image: "" });
     if (success) {
       setLogoImg("");
       setLogoFile(null);
@@ -357,7 +356,6 @@ export default function AdminDashboard() {
     e.preventDefault();
     setIsLoading(true);
     
-    // DB Testimoni menggunakan name, role, text
     const dataToSave = { 
       name: newTesti.nama, 
       role: newTesti.job, 
@@ -391,7 +389,6 @@ export default function AdminDashboard() {
       }
     }
 
-    // DB Dokumentasi menggunakan title, desc, img
     const dataToSave = { 
       title: newDoc.title, 
       desc: newDoc.deskripsi, 
@@ -426,7 +423,6 @@ export default function AdminDashboard() {
       }
     }
 
-    // DB Praktisi menggunakan name, role, img
     const dataToSave = { 
       name: newTeam.nama, 
       role: newTeam.job, 
@@ -528,13 +524,6 @@ export default function AdminDashboard() {
               {isLoading ? <Loader2 size={20} className="animate-spin" /> : "Masuk ke Dashboard"}
             </button>
           </form>
-
-          {!supabaseUrl && (
-            <div className="mt-6 bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-xl flex items-start gap-3">
-              <AlertCircle className="text-yellow-500 flex-shrink-0 mt-0.5" size={16} />
-              <p className="text-yellow-500 text-xs leading-relaxed">Sistem keamanan Supabase belum dikonfigurasi di file environment Anda.</p>
-            </div>
-          )}
         </div>
       </div>
     );
@@ -646,7 +635,7 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* TAB: PENGATURAN LINK (BARU) */}
+          {/* TAB: PENGATURAN LINK */}
           {activeTab === "tombol" && (
             <div className="space-y-8">
               <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100">
@@ -763,7 +752,7 @@ export default function AdminDashboard() {
                   <input type="text" value={newTesti.nama} onChange={e=>setNewTesti({...newTesti, nama: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500" placeholder="Contoh: Budi Santoso" required />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Peran / Jabatan (Misal: Business Owner)</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Peran / Jabatan</label>
                   <input type="text" value={newTesti.job} onChange={e=>setNewTesti({...newTesti, job: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500" placeholder="Contoh: Business Owner" required />
                 </div>
                 <div className="md:col-span-2">
@@ -812,7 +801,7 @@ export default function AdminDashboard() {
               <form onSubmit={addDoc} className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100 grid gap-5">
                 <div><h3 className="font-bold text-xl text-slate-800 border-b border-slate-100 pb-3">Tambah Dokumentasi Baru</h3></div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Judul Kegiatan (Misal: Webinar Tax Planning)</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Judul Kegiatan</label>
                   <input type="text" value={newDoc.title} onChange={e=>setNewDoc({...newDoc, title: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500" placeholder="Judul Dokumentasi" required />
                 </div>
                 <div>
@@ -827,7 +816,7 @@ export default function AdminDashboard() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Deskripsi Singkat (Misal: Berbagi insight...)</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Deskripsi Singkat</label>
                   <textarea value={newDoc.deskripsi} onChange={e=>setNewDoc({...newDoc, deskripsi: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 h-24 resize-none focus:outline-orange-500" placeholder="Deskripsikan kegiatan ini..."></textarea>
                 </div>
                 <div className="mt-2">
@@ -868,7 +857,7 @@ export default function AdminDashboard() {
                   <input type="text" value={newTeam.nama} onChange={e=>setNewTeam({...newTeam, nama: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500" placeholder="Nama anggota" required />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Kategori Job (Misal: Tax/Accounting)</label>
+                  <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Kategori Job</label>
                   <input type="text" value={newTeam.job} onChange={e=>setNewTeam({...newTeam, job: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500" placeholder="Contoh: Tax Specialist" required />
                 </div>
                 <div className="md:col-span-2">
@@ -880,7 +869,6 @@ export default function AdminDashboard() {
                     onChange={e=>setNewTeam({...newTeam, file: e.target.files?.[0] || null})} 
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-orange-50 file:text-orange-600 hover:file:bg-orange-100 cursor-pointer" 
                   />
-                  <p className="text-[10px] text-slate-400 mt-2">Disarankan menggunakan rasio 1:1 (persegi) agar terlihat rapi.</p>
                 </div>
                 <div className="md:col-span-2 mt-2">
                   <button type="submit" disabled={isLoading} className="w-full bg-orange-500 hover:bg-orange-600 text-white px-6 py-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-all shadow-lg shadow-orange-500/20 disabled:opacity-70">
