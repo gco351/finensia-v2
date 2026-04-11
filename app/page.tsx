@@ -30,19 +30,20 @@ const styles = `
   .font-inter { font-family: 'Inter', sans-serif; }
   h1, h2, h3, h4, h5, h6, .font-jakarta { font-family: 'Plus Jakarta Sans', sans-serif; }
 
-  /* Icon Rain Animation - Diubah agar lurus dan terlihat seperti rintik hujan alami */
+  /* Icon Rain Animation - Diperjelas dan lebih natural */
   @keyframes rainFall {
-    0% { transform: translateY(-10vh); opacity: 0; }
-    10% { opacity: 0.5; }
-    80% { opacity: 0.5; }
-    100% { transform: translateY(110vh); opacity: 0; }
+    0% { transform: translateY(-10vh) scale(0.8); opacity: 0; }
+    10% { opacity: 0.85; transform: translateY(0vh) scale(1); }
+    85% { opacity: 0.85; transform: translateY(90vh) scale(1); }
+    100% { transform: translateY(110vh) scale(0.8); opacity: 0; }
   }
   
   .falling-icon {
     position: absolute;
     animation: rainFall linear infinite;
-    color: rgba(249, 115, 22, 0.4); /* Dibuat sedikit transparan agar elegan */
-    z-index: 0;
+    color: rgba(249, 115, 22, 0.7); /* Warna lebih solid/jelas */
+    filter: drop-shadow(0 4px 6px rgba(249, 115, 22, 0.3)); /* Efek glow/bayangan */
+    z-index: 1;
   }
 
   /* Scroll Reveal Effect */
@@ -151,16 +152,14 @@ const FallingBackground = () => {
 
   useEffect(() => {
     const iconTypes = ['dollar', 'calc', 'file', 'chart'];
-    // Meningkatkan jumlah partikel hujan
-    const newIcons = Array.from({ length: 25 }).map((_, i) => ({
+    // Diperbanyak dan ukurannya diperbesar agar terlihat jelas
+    const newIcons = Array.from({ length: 30 }).map((_, i) => ({
       id: i,
       type: iconTypes[Math.floor(Math.random() * iconTypes.length)],
       left: `${Math.random() * 100}%`,
-      // Durasi lebih cepat untuk efek hujan natural (antara 3 sampai 7 detik)
-      animationDuration: `${Math.random() * 4 + 3}s`, 
-      animationDelay: `${Math.random() * 5}s`,
-      // Ukuran lebih kecil
-      size: Math.random() * 10 + 12, 
+      animationDuration: `${Math.random() * 3 + 2.5}s`, // Lebih cepat, 2.5s - 5.5s
+      animationDelay: `${Math.random() * 4}s`,
+      size: Math.random() * 18 + 18, // Ukuran 18px sampai 36px
     }));
     setIcons(newIcons);
   }, []);
@@ -203,6 +202,11 @@ export default function App() {
   const [docs, setDocs] = useState(fallbackDocs);
   const [team, setTeam] = useState(fallbackTeam);
 
+  // Link Buttons
+  const [waLink, setWaLink] = useState(waLinkGeneral);
+  const [linkKelas1, setLinkKelas1] = useState(waLinkClass1);
+  const [linkKelas2, setLinkKelas2] = useState(waLinkClass2);
+
   // --- SUPABASE FETCH LOGIC ---
   useEffect(() => {
     let isMounted = true;
@@ -235,19 +239,31 @@ export default function App() {
     };
 
     const loadDatabase = async () => {
-      const [dataTentang, dataVideo, dataTesti, dataDok, dataTim, dataPengaturan] = await Promise.all([
+      // Coba ambil dari "pengaturan_web" (standar) atau "pengaturan logo" (sesuai database Anda saat ini)
+      let dataPengaturan = await fetchTable('pengaturan_web');
+      if (!dataPengaturan || dataPengaturan.length === 0) {
+        dataPengaturan = await fetchTable('pengaturan logo'); 
+      }
+
+      const [dataTentang, dataVideo, dataTesti, dataDok, dataTim, dataLink] = await Promise.all([
         fetchTable('tentang_kami'),
         fetchTable('video_profil'),
         fetchTable('testimoni'),
         fetchTable('dokumentasi'),
         fetchTable('tim_praktisi'),
-        fetchTable('pengaturan_web') // Tabel Baru Untuk Logo
+        fetchTable('pengaturan_link')
       ]);
 
       if (isMounted) {
-        // Render Logo Custom jika ada
+        // Render Logo Custom jika ada (mendeteksi kolom "logo" atau "image")
         if (Array.isArray(dataPengaturan) && dataPengaturan.length > 0) {
-          setSiteLogo(String(dataPengaturan[0].logo || dataPengaturan[0].logo_url || ""));
+          setSiteLogo(String(dataPengaturan[0].logo || dataPengaturan[0].image || dataPengaturan[0].logo_url || ""));
+        }
+
+        if (Array.isArray(dataLink) && dataLink.length > 0) {
+          if (dataLink[0].wa_umum) setWaLink(dataLink[0].wa_umum);
+          if (dataLink[0].kelas_1) setLinkKelas1(dataLink[0].kelas_1);
+          if (dataLink[0].kelas_2) setLinkKelas2(dataLink[0].kelas_2);
         }
 
         if (Array.isArray(dataTentang) && dataTentang.length > 0) {
@@ -362,7 +378,7 @@ export default function App() {
             </div>
             
             <a 
-              href={waLinkGeneral}
+              href={waLink}
               target="_blank" 
               rel="noopener noreferrer"
               className="hidden md:block bg-[#f97316] hover:bg-[#ea580c] text-white px-6 py-2.5 rounded-full text-sm font-medium transition-all hover:shadow-[0_0_15px_rgba(249,115,22,0.5)] hover:scale-105"
@@ -574,7 +590,7 @@ export default function App() {
               </ul>
               
               <a 
-                href={waLinkClass1}
+                href={linkKelas1}
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="block text-center w-full py-4 bg-gradient-to-r from-[#f97316] to-[#ea580c] hover:opacity-90 text-white rounded-xl font-bold transition-all text-sm shadow-lg shadow-orange-500/25"
@@ -602,7 +618,7 @@ export default function App() {
               </ul>
               
               <a 
-                href={waLinkClass2}
+                href={linkKelas2}
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="block text-center w-full py-4 bg-transparent border border-slate-700 hover:border-slate-500 hover:bg-white/5 text-white rounded-xl font-bold transition-all text-sm"
@@ -864,7 +880,7 @@ export default function App() {
 
       {/* FLOATING WHATSAPP BUTTON */}
       <a
-        href={waLinkGeneral}
+        href={waLink}
         target="_blank"
         rel="noopener noreferrer"
         className="fixed bottom-6 right-6 bg-[#25D366] text-white p-4 rounded-full shadow-[0_8px_25px_0_rgba(37,211,102,0.4)] hover:scale-110 hover:-translate-y-1 transition-all duration-300 z-50 flex items-center justify-center group"
