@@ -39,7 +39,7 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
   
-  // FIX BUG: Sistem reset key agar input file tidak mereset dirinya sendiri saat dipilih
+  // Fitur reset key agar input file kembali kosong setelah sukses upload
   const [resetKey, setResetKey] = useState(Date.now());
 
   // Data States
@@ -58,9 +58,9 @@ export default function AdminDashboard() {
   const [kelas2Link, setKelas2Link] = useState("");
 
   // Form States for adding new items
-  const [newTesti, setNewTesti] = useState({ name: "", role: "", text: "" });
-  const [newDoc, setNewDoc] = useState({ title: "", desc: "", img: "", file: null });
-  const [newTeam, setNewTeam] = useState({ name: "", role: "", img: "", file: null });
+  const [newTesti, setNewTesti] = useState({ nama: "", job: "", testimoni: "" });
+  const [newDoc, setNewDoc] = useState({ title: "", deskripsi: "", img: "", file: null });
+  const [newTeam, setNewTeam] = useState({ nama: "", job: "", img: "", file: null });
 
   // Environment Variables
   const supabaseUrl = typeof process !== 'undefined' && process.env ? process.env.NEXT_PUBLIC_SUPABASE_URL || "" : "";
@@ -79,20 +79,20 @@ export default function AdminDashboard() {
   const fetchTable = async (tableName) => {
     if (!supabaseUrl || !supabaseKey) return [];
     try {
-      const res = await fetch(`${supabaseUrl}/rest/v1/${tableName}?select=*`, {
+      const res = await fetch(`${supabaseUrl}/rest/v1/${encodeURIComponent(tableName)}?select=*`, {
         headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${authToken || supabaseKey}` }
       });
       if (!res.ok) throw new Error("Gagal fetch data");
       return await res.json();
     } catch (err) {
-      console.error(err);
+      console.error("Fetch Error:", err);
       return [];
     }
   };
 
   const insertData = async (tableName, data) => {
     try {
-      const res = await fetch(`${supabaseUrl}/rest/v1/${tableName}`, {
+      const res = await fetch(`${supabaseUrl}/rest/v1/${encodeURIComponent(tableName)}`, {
         method: 'POST',
         headers: { 
           'apikey': supabaseKey, 
@@ -102,15 +102,21 @@ export default function AdminDashboard() {
         },
         body: JSON.stringify(data)
       });
-      return res.ok;
+      if (!res.ok) {
+        const errInfo = await res.json();
+        console.error(`Insert Error [${tableName}]:`, errInfo);
+        return false;
+      }
+      return true;
     } catch (err) {
+      console.error(err);
       return false;
     }
   };
 
   const deleteData = async (tableName, id) => {
     try {
-      const res = await fetch(`${supabaseUrl}/rest/v1/${tableName}?id=eq.${id}`, {
+      const res = await fetch(`${supabaseUrl}/rest/v1/${encodeURIComponent(tableName)}?id=eq.${id}`, {
         method: 'DELETE',
         headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${authToken}` }
       });
@@ -164,7 +170,11 @@ export default function AdminDashboard() {
         });
       }
 
-      if (!res.ok) throw new Error("Upload gagal");
+      if (!res.ok) {
+        const errInfo = await res.json();
+        console.error("Storage Error:", errInfo);
+        throw new Error("Upload gagal");
+      }
       return `${supabaseUrl}/storage/v1/object/public/${bucketName}/${fileName}`;
     } catch (err) {
       console.error("Error upload:", err);
@@ -181,14 +191,14 @@ export default function AdminDashboard() {
       fetchTable('testimoni'),
       fetchTable('dokumentasi'),
       fetchTable('tim_praktisi'),
-      fetchTable('pengaturan_web'), 
+      fetchTable('pengaturan logo'), // Sesuai dengan DB Anda (pakai spasi)
       fetchTable('pengaturan_link')
     ]);
 
-    if (dTentang && dTentang.length > 0) setTentangImg(dTentang[0].img || dTentang[0].image || "");
+    if (dTentang && dTentang.length > 0) setTentangImg(dTentang[0].image || dTentang[0].img || "");
     if (dVideo && dVideo.length > 0) setVideoUrl(dVideo[0].url || "");
     
-    if (dPengaturan && dPengaturan.length > 0) setLogoImg(dPengaturan[0].logo || dPengaturan[0].logo_url || "");
+    if (dPengaturan && dPengaturan.length > 0) setLogoImg(dPengaturan[0].image || dPengaturan[0].logo || "");
     
     if (dLink && dLink.length > 0) {
       setWaLink(dLink[0].wa_umum || "");
@@ -264,26 +274,28 @@ export default function AdminDashboard() {
         setLogoImg(uploadedUrl);
         setLogoFile(null);
       } else {
-        showMessage("Gagal mengunggah logo!", "error");
+        showMessage("Gagal mengunggah logo ke Storage!", "error");
         setIsLoading(false);
         return;
       }
     }
 
-    const success = await updateSingleData('pengaturan_web', { logo: finalImgUrl });
+    // Menggunakan nama tabel "pengaturan logo" dan kolom "image"
+    const success = await updateSingleData('pengaturan logo', { image: finalImgUrl });
     if (success) {
       showMessage("Logo website berhasil disimpan!");
-      setResetKey(Date.now()); // Reset input file visualnya setelah sukses
+      setResetKey(Date.now()); 
     } else {
-      showMessage("Gagal menyimpan ke database! Pastikan tabel pengaturan_web sudah dibuat.", "error");
+      showMessage("Gagal menyimpan ke database!", "error");
     }
     setIsLoading(false);
   };
 
   const deleteLogo = async () => {
-    if (!window.confirm("Yakin ingin menghapus logo ini dan mengembalikan ke teks default?")) return;
+    if (!window.confirm("Yakin ingin menghapus logo ini?")) return;
     setIsLoading(true);
-    const success = await updateSingleData('pengaturan_web', { logo: "" });
+    
+    const success = await updateSingleData('pengaturan logo', { image: "" });
     if (success) {
       setLogoImg("");
       setLogoFile(null);
@@ -303,7 +315,7 @@ export default function AdminDashboard() {
       kelas_2: kelas2Link
     };
     const success = await updateSingleData('pengaturan_link', dataToSave);
-    success ? showMessage("Link tombol berhasil diperbarui!") : showMessage("Gagal menyimpan ke database! Pastikan tabel pengaturan_link sudah dibuat.", "error");
+    success ? showMessage("Link tombol berhasil diperbarui!") : showMessage("Gagal menyimpan ke database!", "error");
     setIsLoading(false);
   };
 
@@ -327,9 +339,9 @@ export default function AdminDashboard() {
     const success = await updateSingleData('tentang_kami', { image: finalImgUrl });
     if (success) {
       showMessage("Foto Tentang Kami berhasil disimpan!");
-      setResetKey(Date.now()); // Reset input file visualnya setelah sukses
+      setResetKey(Date.now());
     } else {
-      showMessage("Gagal menyimpan!", "error");
+      showMessage("Gagal menyimpan ke database!", "error");
     }
     setIsLoading(false);
   };
@@ -344,10 +356,18 @@ export default function AdminDashboard() {
   const addTesti = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    const success = await insertData('testimoni', newTesti);
+    
+    // DB Testimoni menggunakan name, role, text
+    const dataToSave = { 
+      name: newTesti.nama, 
+      role: newTesti.job, 
+      text: newTesti.testimoni 
+    };
+
+    const success = await insertData('testimoni', dataToSave);
     if (success) {
       showMessage("Testimoni ditambahkan!");
-      setNewTesti({ name: "", role: "", text: "" });
+      setNewTesti({ nama: "", job: "", testimoni: "" });
       loadAllData();
     } else {
       showMessage("Gagal menambahkan testimoni!", "error");
@@ -371,12 +391,18 @@ export default function AdminDashboard() {
       }
     }
 
-    const dataToSave = { title: newDoc.title, desc: newDoc.desc, img: finalImgUrl };
+    // DB Dokumentasi menggunakan title, desc, img
+    const dataToSave = { 
+      title: newDoc.title, 
+      desc: newDoc.deskripsi, 
+      img: finalImgUrl 
+    };
+
     const success = await insertData('dokumentasi', dataToSave);
     if (success) {
       showMessage("Dokumentasi ditambahkan!");
-      setNewDoc({ title: "", desc: "", img: "", file: null });
-      setResetKey(Date.now()); // Reset input file visualnya setelah sukses
+      setNewDoc({ title: "", deskripsi: "", img: "", file: null });
+      setResetKey(Date.now());
       loadAllData();
     } else {
       showMessage("Gagal menambahkan dokumentasi!", "error");
@@ -394,21 +420,27 @@ export default function AdminDashboard() {
       if (uploadedUrl) {
         finalImgUrl = uploadedUrl;
       } else {
-        showMessage("Gagal mengunggah foto tim!", "error");
+        showMessage("Gagal mengunggah foto praktisi!", "error");
         setIsLoading(false);
         return;
       }
     }
 
-    const dataToSave = { name: newTeam.name, role: newTeam.role, img: finalImgUrl };
+    // DB Praktisi menggunakan name, role, img
+    const dataToSave = { 
+      name: newTeam.nama, 
+      role: newTeam.job, 
+      img: finalImgUrl 
+    };
+
     const success = await insertData('tim_praktisi', dataToSave);
     if (success) {
-      showMessage("Anggota tim ditambahkan!");
-      setNewTeam({ name: "", role: "", img: "", file: null });
-      setResetKey(Date.now()); // Reset input file visualnya setelah sukses
+      showMessage("Praktisi berhasil ditambahkan!");
+      setNewTeam({ nama: "", job: "", img: "", file: null });
+      setResetKey(Date.now());
       loadAllData();
     } else {
-      showMessage("Gagal menambahkan tim!", "error");
+      showMessage("Gagal menambahkan praktisi!", "error");
     }
     setIsLoading(false);
   };
@@ -417,7 +449,7 @@ export default function AdminDashboard() {
     if (!window.confirm("Yakin ingin menghapus data ini?")) return;
     setIsLoading(true);
     const success = await deleteData(table, id);
-    success ? showMessage("Data terhapus!") : showMessage("Gagal menghapus data!", "error");
+    success ? showMessage("Data berhasil dihapus!") : showMessage("Gagal menghapus data!", "error");
     loadAllData();
     setIsLoading(false);
   };
@@ -508,7 +540,7 @@ export default function AdminDashboard() {
     );
   }
 
-  // --- MAIN DASHBOARD ---
+  // --- MAIN DASHBOARD UI ---
   const tabs = [
     { id: "pengaturan", name: "Pengaturan Logo", icon: <Settings size={18} /> },
     { id: "tombol", name: "Pengaturan Link", icon: <Link2 size={18} /> },
@@ -728,15 +760,15 @@ export default function AdminDashboard() {
                 <div className="md:col-span-2"><h3 className="font-bold text-xl text-slate-800 border-b border-slate-100 pb-3">Tambah Testimoni Baru</h3></div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Nama Klien</label>
-                  <input type="text" value={newTesti.name} onChange={e=>setNewTesti({...newTesti, name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500" placeholder="Contoh: Budi Santoso" required />
+                  <input type="text" value={newTesti.nama} onChange={e=>setNewTesti({...newTesti, nama: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500" placeholder="Contoh: Budi Santoso" required />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Peran / Jabatan (Misal: Business Owner)</label>
-                  <input type="text" value={newTesti.role} onChange={e=>setNewTesti({...newTesti, role: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500" placeholder="Contoh: Business Owner" required />
+                  <input type="text" value={newTesti.job} onChange={e=>setNewTesti({...newTesti, job: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500" placeholder="Contoh: Business Owner" required />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Isi Testimoni</label>
-                  <textarea value={newTesti.text} onChange={e=>setNewTesti({...newTesti, text: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 h-28 resize-none focus:outline-orange-500" placeholder="Tulis testimoni di sini..." required></textarea>
+                  <textarea value={newTesti.testimoni} onChange={e=>setNewTesti({...newTesti, testimoni: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 h-28 resize-none focus:outline-orange-500" placeholder="Tulis testimoni di sini..." required></textarea>
                 </div>
                 <div className="md:col-span-2 mt-2">
                   <button type="submit" disabled={isLoading} className="w-full bg-orange-500 hover:bg-orange-600 text-white px-6 py-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-all shadow-lg shadow-orange-500/20 disabled:opacity-70">
@@ -796,7 +828,7 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Deskripsi Singkat (Misal: Berbagi insight...)</label>
-                  <textarea value={newDoc.desc} onChange={e=>setNewDoc({...newDoc, desc: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 h-24 resize-none focus:outline-orange-500" placeholder="Deskripsikan kegiatan ini..."></textarea>
+                  <textarea value={newDoc.deskripsi} onChange={e=>setNewDoc({...newDoc, deskripsi: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 h-24 resize-none focus:outline-orange-500" placeholder="Deskripsikan kegiatan ini..."></textarea>
                 </div>
                 <div className="mt-2">
                   <button type="submit" disabled={isLoading} className="w-full bg-orange-500 hover:bg-orange-600 text-white px-6 py-4 rounded-xl font-bold flex justify-center items-center gap-2 transition-all shadow-lg shadow-orange-500/20 disabled:opacity-70">
@@ -833,11 +865,11 @@ export default function AdminDashboard() {
                 <div className="md:col-span-2"><h3 className="font-bold text-xl text-slate-800 border-b border-slate-100 pb-3">Tambah Praktisi</h3></div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Nama Lengkap</label>
-                  <input type="text" value={newTeam.name} onChange={e=>setNewTeam({...newTeam, name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500" placeholder="Nama anggota" required />
+                  <input type="text" value={newTeam.nama} onChange={e=>setNewTeam({...newTeam, nama: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500" placeholder="Nama anggota" required />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Kategori Job (Misal: Tax/Accounting)</label>
-                  <input type="text" value={newTeam.role} onChange={e=>setNewTeam({...newTeam, role: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500" placeholder="Contoh: Tax Specialist" required />
+                  <input type="text" value={newTeam.job} onChange={e=>setNewTeam({...newTeam, job: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-orange-500" placeholder="Contoh: Tax Specialist" required />
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-wider">Upload Foto Profil</label>
