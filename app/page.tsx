@@ -30,18 +30,20 @@ const styles = `
 
   /* Animasi Hujan Natural & Solid */
   @keyframes rainFall {
-    0% { transform: translateY(-15vh); opacity: 0; }
-    10% { opacity: 1; }
-    90% { opacity: 1; }
-    100% { transform: translateY(115vh); opacity: 0; }
+    0% { transform: translateY(-10vh); opacity: 0; }
+    10% { opacity: 0.6; }
+    90% { opacity: 0.6; }
+    100% { transform: translateY(110vh); opacity: 0; }
   }
   
   .falling-icon {
     position: absolute;
+    top: -10vh; /* Mulai dari luar layar atas */
+    opacity: 0; 
     animation: rainFall linear infinite;
-    color: #f97316; /* Warna orange solid 100% */
-    filter: drop-shadow(0 0 10px rgba(249, 115, 22, 0.8));
-    z-index: 1;
+    color: #f97316; 
+    filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.4));
+    z-index: 0; /* Taruh di bawah layer agar tidak menghalangi teks/logo */
   }
 
   .reveal-on-scroll {
@@ -133,13 +135,17 @@ const FallingBackground = () => {
 
   useEffect(() => {
     const iconTypes = ['dollar', 'calc', 'file', 'chart'];
-    const newIcons = Array.from({ length: 35 }).map((_, i) => ({
+    // FIX BUG: Kurangi jumlah ikon menjadi 15 agar tidak sumpek/numpuk
+    const newIcons = Array.from({ length: 15 }).map((_, i) => ({
       id: i,
       type: iconTypes[Math.floor(Math.random() * iconTypes.length)],
       left: `${Math.random() * 100}%`,
-      animationDuration: `${Math.random() * 4 + 3}s`, 
-      animationDelay: `${Math.random() * 5}s`,
-      size: Math.random() * 24 + 20, 
+      // Perlambat durasi jatuhnya agar terlihat natural (8 hingga 14 detik)
+      animationDuration: `${Math.random() * 6 + 8}s`, 
+      // Sebar jeda jatuh secara luas ke minus 20 detik agar langsung merata saat web dibuka
+      animationDelay: `-${Math.random() * 20}s`,
+      // Perkecil ukuran ikon (14px sampai 30px) agar estetik dan tidak ganggu mata
+      size: Math.random() * 16 + 14, 
     }));
     setIcons(newIcons);
   }, []);
@@ -311,18 +317,17 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="h-16 flex items-center justify-between transition-all">
             
-            {/* LOGO */}
+            {/* LOGO - UPDATED agar teks "Finensia." selalu muncul */}
             <div className="flex items-center gap-2 group cursor-pointer">
               {siteLogo ? (
-                <img src={siteLogo} alt="Logo Finensia" className="h-10 w-auto object-contain transition-transform group-hover:scale-105" />
+                <img src={siteLogo} alt="Ikon Finensia" className="h-10 w-auto object-contain transition-transform group-hover:scale-105" />
               ) : (
-                <>
-                  <div className="w-9 h-9 bg-gradient-to-tr from-[#f97316] to-[#fb923c] rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform">
-                    <TrendingUp className="text-white" size={20} />
-                  </div>
-                  <span className="text-2xl font-bold text-white tracking-tight font-jakarta">Finensia.</span>
-                </>
+                <div className="w-9 h-9 bg-gradient-to-tr from-[#f97316] to-[#fb923c] rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform">
+                  <TrendingUp className="text-white" size={20} />
+                </div>
               )}
+              {/* Teks Finensia selalu muncul di sebelah ikon/logo yang diupload */}
+              <span className="text-2xl font-bold text-white tracking-tight font-jakarta">Finensia.</span>
             </div>
 
             <div className="hidden md:flex space-x-8 text-sm font-medium text-slate-300">
@@ -661,16 +666,19 @@ export default function App() {
       <footer className="bg-[#0b1120] text-slate-400 py-16 border-t border-slate-900">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10">
           <div className="md:col-span-2">
+            {/* LOGO FOOTER - UPDATED sama seperti Navbar */}
             <div className="flex items-center gap-2 mb-6 opacity-90 hover:opacity-100 transition-opacity">
               {siteLogo ? (
-                <img src={siteLogo} alt="Logo Finensia" className="h-8 w-auto object-contain" />
+                <img src={siteLogo} alt="Ikon Finensia" className="h-8 w-auto object-contain" />
               ) : (
-                <>
-                  <div className="w-8 h-8 bg-gradient-to-br from-[#f97316] to-[#ea580c] rounded-lg flex items-center justify-center shadow-lg"><TrendingUp className="text-white" size={16} /></div>
-                  <span className="text-xl font-bold text-white tracking-tight font-jakarta">Finensia.</span>
-                </>
+                <div className="w-8 h-8 bg-gradient-to-br from-[#f97316] to-[#ea580c] rounded-lg flex items-center justify-center shadow-lg">
+                  <TrendingUp className="text-white" size={16} />
+                </div>
               )}
+              {/* Teks Finensia selalu muncul di sebelah logo */}
+              <span className="text-xl font-bold text-white tracking-tight font-jakarta">Finensia.</span>
             </div>
+            
             <p className="text-sm leading-relaxed max-w-sm">Solusi akuntansi dan perpajakan terpadu untuk percepatan skala bisnis Anda.</p>
           </div>
           <div>
