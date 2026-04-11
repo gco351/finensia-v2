@@ -19,7 +19,8 @@ import {
   Lock,
   Eye,
   EyeOff,
-  Loader2
+  Loader2,
+  CheckCircle2
 } from 'lucide-react';
 
 export default function AdminDashboard() {
