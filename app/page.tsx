@@ -9,10 +9,8 @@ import {
   BookOpen, 
   CheckCircle2, 
   ChevronDown, 
-  ChevronUp,
   Star,
   ArrowRight,
-  ShieldCheck,
   Users,
   Menu,
   X,
@@ -22,7 +20,7 @@ import {
   PlaySquare
 } from 'lucide-react';
 
-// --- CUSTOM CSS FOR ANIMATIONS & FONTS ---
+// --- CUSTOM CSS ---
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
 
@@ -30,23 +28,22 @@ const styles = `
   .font-inter { font-family: 'Inter', sans-serif; }
   h1, h2, h3, h4, h5, h6, .font-jakarta { font-family: 'Plus Jakarta Sans', sans-serif; }
 
-  /* Icon Rain Animation - Diperjelas dan lebih natural */
+  /* Animasi Hujan Natural & Solid */
   @keyframes rainFall {
-    0% { transform: translateY(-10vh) scale(0.8); opacity: 0; }
-    10% { opacity: 0.85; transform: translateY(0vh) scale(1); }
-    85% { opacity: 0.85; transform: translateY(90vh) scale(1); }
-    100% { transform: translateY(110vh) scale(0.8); opacity: 0; }
+    0% { transform: translateY(-15vh); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(115vh); opacity: 0; }
   }
   
   .falling-icon {
     position: absolute;
     animation: rainFall linear infinite;
-    color: rgba(249, 115, 22, 0.7); /* Warna lebih solid/jelas */
-    filter: drop-shadow(0 4px 6px rgba(249, 115, 22, 0.3)); /* Efek glow/bayangan */
+    color: #f97316; /* Warna orange solid 100% */
+    filter: drop-shadow(0 0 10px rgba(249, 115, 22, 0.8));
     z-index: 1;
   }
 
-  /* Scroll Reveal Effect */
   .reveal-on-scroll {
     opacity: 0;
     transform: translateY(40px);
@@ -60,7 +57,6 @@ const styles = `
   .delay-200 { transition-delay: 200ms; }
   .delay-300 { transition-delay: 300ms; }
 
-  /* Hover Lift & Glow */
   .hover-lift { 
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
   }
@@ -70,7 +66,6 @@ const styles = `
     border-color: rgba(249, 115, 22, 0.3);
   }
 
-  /* Glowing Blobs */
   .blob {
     position: absolute;
     border-radius: 50%;
@@ -84,7 +79,6 @@ const styles = `
     100% { transform: translate(30px, -40px) scale(1.1); }
   }
 
-  /* Text Gradients */
   .text-gradient {
     background: linear-gradient(135deg, #f97316, #fb923c, #f59e0b);
     -webkit-background-clip: text;
@@ -92,7 +86,6 @@ const styles = `
     background-clip: text;
   }
   
-  /* Smooth Fade for Images */
   .fade-image {
     animation: fadeIn 0.5s ease-in-out forwards;
   }
@@ -102,7 +95,7 @@ const styles = `
   }
 `;
 
-// --- DATA STATIS AWAL (FALLBACK) ---
+// --- DATA FALLBACK ---
 const waNumber = "6281226523207"; 
 const waLinkGeneral = `https://wa.me/${waNumber}?text=Halo%20Finensia,%20saya%20ingin%20berkonsultasi.`;
 const waLinkClass1 = `https://wa.me/${waNumber}?text=Halo%20Finensia,%20saya%20ingin%20daftar%20kelas%20Professional%20Accounting.`;
@@ -123,21 +116,9 @@ const fallbackTestimonials = [
 ];
 
 const fallbackDocs = [
-  {
-    img: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-    title: "Pelatihan Akuntansi Batch 1",
-    desc: "Suasana kelas yang interaktif, fokus pada bedah kasus dan penyusunan laporan keuangan secara langsung."
-  },
-  {
-    img: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-    title: "Sesi Mentoring & Setup ERP",
-    desc: "Pendampingan intensif bersama pemilik UMKM untuk merancang sistem pencatatan yang efisien."
-  },
-  {
-    img: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-    title: "Webinar Tax Planning",
-    desc: "Berbagi insight mengenai strategi optimalisasi pajak yang aman dan sesuai regulasi bersama pelaku usaha."
-  }
+  { img: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80", title: "Pelatihan Akuntansi Batch 1", desc: "Suasana kelas yang interaktif, fokus pada bedah kasus." },
+  { img: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80", title: "Sesi Mentoring & Setup ERP", desc: "Pendampingan intensif bersama pemilik UMKM." },
+  { img: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80", title: "Webinar Tax Planning", desc: "Berbagi insight mengenai strategi optimalisasi pajak." }
 ];
 
 const fallbackTeam = [
@@ -146,20 +127,19 @@ const fallbackTeam = [
   { name: "Lucas Abraham", role: "Accounting Specialist", img: "" }
 ];
 
-// --- KOMPONEN BACKGROUND ANIMASI (Hujan Alami) ---
+// --- BACKGROUND HUJAN ---
 const FallingBackground = () => {
   const [icons, setIcons] = useState([]);
 
   useEffect(() => {
     const iconTypes = ['dollar', 'calc', 'file', 'chart'];
-    // Diperbanyak dan ukurannya diperbesar agar terlihat jelas
-    const newIcons = Array.from({ length: 30 }).map((_, i) => ({
+    const newIcons = Array.from({ length: 35 }).map((_, i) => ({
       id: i,
       type: iconTypes[Math.floor(Math.random() * iconTypes.length)],
       left: `${Math.random() * 100}%`,
-      animationDuration: `${Math.random() * 3 + 2.5}s`, // Lebih cepat, 2.5s - 5.5s
-      animationDelay: `${Math.random() * 4}s`,
-      size: Math.random() * 18 + 18, // Ukuran 18px sampai 36px
+      animationDuration: `${Math.random() * 4 + 3}s`, 
+      animationDelay: `${Math.random() * 5}s`,
+      size: Math.random() * 24 + 20, 
     }));
     setIcons(newIcons);
   }, []);
@@ -194,7 +174,7 @@ export default function App() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [imageKey, setImageKey] = useState(0); 
 
-  // --- STATE DATA (Diinisialisasi dengan fallback untuk mencegah blank) ---
+  // --- STATE DATA ---
   const [siteLogo, setSiteLogo] = useState("");
   const [aboutImg, setAboutImg] = useState("https://images.unsplash.com/photo-1554224155-6726b3ff858f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80");
   const [videoUrl, setVideoUrl] = useState("https://www.youtube.com/embed/EJozdWEAdus?rel=0");
@@ -202,50 +182,30 @@ export default function App() {
   const [docs, setDocs] = useState(fallbackDocs);
   const [team, setTeam] = useState(fallbackTeam);
 
-  // Link Buttons
   const [waLink, setWaLink] = useState(waLinkGeneral);
   const [linkKelas1, setLinkKelas1] = useState(waLinkClass1);
   const [linkKelas2, setLinkKelas2] = useState(waLinkClass2);
 
-  // --- SUPABASE FETCH LOGIC ---
+  // --- FETCH DATA ---
   useEffect(() => {
     let isMounted = true;
-    
-    let supabaseUrl = "";
-    let supabaseKey = "";
-    try {
-      if (typeof process !== 'undefined' && process.env) {
-        supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-        supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-      }
-    } catch (e) {
-      console.warn("Variabel environment tidak ditemukan.");
-    }
+    let supabaseUrl = typeof process !== 'undefined' && process.env ? process.env.NEXT_PUBLIC_SUPABASE_URL || "" : "";
+    let supabaseKey = typeof process !== 'undefined' && process.env ? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "" : "";
 
     const fetchTable = async (tableName) => {
       if (!supabaseUrl || !supabaseKey) return null;
       try {
-        const response = await fetch(`${supabaseUrl}/rest/v1/${tableName}?select=*`, {
-          headers: {
-            'apikey': supabaseKey,
-            'Authorization': `Bearer ${supabaseKey}`
-          }
+        const response = await fetch(`${supabaseUrl}/rest/v1/${encodeURIComponent(tableName)}?select=*`, {
+          headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
         });
         if (!response.ok) return null;
         return await response.json();
-      } catch (error) {
-        return null;
-      }
+      } catch (error) { return null; }
     };
 
     const loadDatabase = async () => {
-      // Coba ambil dari "pengaturan_web" (standar) atau "pengaturan logo" (sesuai database Anda saat ini)
-      let dataPengaturan = await fetchTable('pengaturan_web');
-      if (!dataPengaturan || dataPengaturan.length === 0) {
-        dataPengaturan = await fetchTable('pengaturan logo'); 
-      }
-
-      const [dataTentang, dataVideo, dataTesti, dataDok, dataTim, dataLink] = await Promise.all([
+      const [dataPengaturan, dataTentang, dataVideo, dataTesti, dataDok, dataTim, dataLink] = await Promise.all([
+        fetchTable('pengaturan_logo'),
         fetchTable('tentang_kami'),
         fetchTable('video_profil'),
         fetchTable('testimoni'),
@@ -255,9 +215,8 @@ export default function App() {
       ]);
 
       if (isMounted) {
-        // Render Logo Custom jika ada (mendeteksi kolom "logo" atau "image")
         if (Array.isArray(dataPengaturan) && dataPengaturan.length > 0) {
-          setSiteLogo(String(dataPengaturan[0].logo || dataPengaturan[0].image || dataPengaturan[0].logo_url || ""));
+          setSiteLogo(String(dataPengaturan[0].image || dataPengaturan[0].logo || ""));
         }
 
         if (Array.isArray(dataLink) && dataLink.length > 0) {
@@ -267,7 +226,7 @@ export default function App() {
         }
 
         if (Array.isArray(dataTentang) && dataTentang.length > 0) {
-          setAboutImg(String(dataTentang[0].image || dataTentang[0].img_url || dataTentang[0].img || aboutImg));
+          setAboutImg(String(dataTentang[0].image || dataTentang[0].img || aboutImg));
         }
         
         if (Array.isArray(dataVideo) && dataVideo.length > 0) {
@@ -279,7 +238,6 @@ export default function App() {
           }
         }
         
-        // MAPPING DATA
         if (Array.isArray(dataTesti) && dataTesti.length > 0) {
           setTestimonials(dataTesti.map(t => ({
             name: String(t.name || t.nama || ''),
@@ -290,7 +248,7 @@ export default function App() {
 
         if (Array.isArray(dataDok) && dataDok.length > 0) {
           setDocs(dataDok.map(d => ({
-            img: String(d.img || d.image || d.img_url || ''),
+            img: String(d.img || d.image || ''),
             title: String(d.title || ''),
             desc: String(d.desc || d.deskripsi || '')
           })));
@@ -310,16 +268,13 @@ export default function App() {
     return () => { isMounted = false; };
   }, []);
 
-  // --- SCROLL OBSERVER EFFECT ---
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('animate-reveal');
-        }
+        if (entry.isIntersecting) entry.target.classList.add('animate-reveal');
       });
     }, { threshold: 0.1 });
 
@@ -356,7 +311,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="h-16 flex items-center justify-between transition-all">
             
-            {/* LOGO SECTION */}
+            {/* LOGO */}
             <div className="flex items-center gap-2 group cursor-pointer">
               {siteLogo ? (
                 <img src={siteLogo} alt="Logo Finensia" className="h-10 w-auto object-contain transition-transform group-hover:scale-105" />
@@ -409,8 +364,6 @@ export default function App() {
       {/* 1. HERO SECTION */}
       <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 bg-[#0b1120] overflow-hidden flex items-center min-h-[90vh]">
         <FallingBackground />
-        
-        {/* Animated Background Blobs */}
         <div className="blob bg-orange-600 w-96 h-96 top-0 left-[-10%] mix-blend-screen"></div>
         <div className="blob bg-blue-600 w-80 h-80 bottom-0 right-[-5%] mix-blend-screen animation-delay-2000"></div>
         
@@ -441,9 +394,7 @@ export default function App() {
 
       {/* 2. TENTANG KAMI */}
       <section id="tentang" className="py-20 md:py-28 bg-white relative overflow-hidden">
-        {/* Subtle background element */}
         <div className="absolute top-0 right-0 w-1/3 h-full bg-slate-50 rounded-l-full opacity-50 -z-10 transform translate-x-1/2"></div>
-        
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid lg:grid-cols-2 gap-12 md:gap-20 items-center">
             <div className="order-2 lg:order-1 reveal-on-scroll">
@@ -455,15 +406,8 @@ export default function App() {
                 Mitra Strategis untuk Keuangan & Pajak Bisnis Anda
               </h2>
               <div className="space-y-4 text-slate-600 text-sm md:text-base leading-relaxed">
-                <p>
-                  <strong>Finensia</strong> hadir sebagai layanan di bidang akuntansi dan perpajakan yang membantu individu dan pelaku usaha dalam mengelola keuangan secara lebih rapi, efisien, dan terstruktur.
-                </p>
-                <p>
-                  Kami percaya bahwa keuangan yang tertata bukan hanya kewajiban, tetapi fondasi penting untuk pertumbuhan bisnis. Oleh karena itu, kami menghadirkan layanan yang mudah dipahami, aplikatif, dan relevan dengan kebutuhan bisnis saat ini.
-                </p>
-                <p>
-                  Dengan pendekatan yang praktis, Finensia membantu Anda dalam pembukuan, pengelolaan administrasi pajak, hingga peningkatan pemahaman finansial secara menyeluruh.
-                </p>
+                <p><strong>Finensia</strong> hadir sebagai layanan di bidang akuntansi dan perpajakan yang membantu individu dan pelaku usaha dalam mengelola keuangan secara lebih rapi, efisien, dan terstruktur.</p>
+                <p>Kami percaya bahwa keuangan yang tertata bukan hanya kewajiban, tetapi fondasi penting untuk pertumbuhan bisnis. Oleh karena itu, kami menghadirkan layanan yang mudah dipahami, aplikatif, dan relevan dengan kebutuhan bisnis saat ini.</p>
               </div>
             </div>
             
@@ -471,11 +415,6 @@ export default function App() {
               <div className="aspect-square bg-[#e2e8f0] rounded-[2rem] overflow-hidden relative flex items-center justify-center border-[6px] border-white shadow-2xl shadow-slate-200 group">
                  <img src={aboutImg} alt="Tim Finensia" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              </div>
-              
-              <div className="absolute -bottom-6 -left-6 bg-gradient-to-br from-[#f97316] to-[#ea580c] p-6 rounded-2xl shadow-xl text-white border-[6px] border-white transform hover:-translate-y-2 transition-transform duration-300">
-                <h3 className="text-2xl font-bold mb-1 font-jakarta">100+</h3>
-                <p className="text-white/90 text-xs font-medium">Klien Terbantu</p>
               </div>
             </div>
           </div>
@@ -492,9 +431,6 @@ export default function App() {
                <span className="h-px w-6 bg-[#f97316]"></span>
             </div>
             <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-4 font-jakarta">Solusi Keuangan & Pajak yang Efisien</h2>
-            <p className="text-slate-500 text-sm md:text-base">
-              Mulai dari pembukuan, administrasi pajak, hingga penyusunan laporan, kami menjaga kerapihan finansial bisnis Anda.
-            </p>
           </div>
 
           <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
@@ -504,13 +440,7 @@ export default function App() {
                 <BookOpen size={24} />
               </div>
               <h3 className="text-xl font-bold mb-3 text-slate-900 font-jakarta group-hover:text-blue-600 transition-colors">Pembukuan & Pelaporan Keuangan</h3>
-              <p className="text-slate-500 mb-8 text-sm leading-relaxed">
-                Pencatatan transaksi keuangan secara rapi dan sesuai standar akuntansi.
-              </p>
-              <div className="pt-6 border-t border-slate-100 mt-auto">
-                <p className="text-xs text-slate-400 mb-1 font-medium">Mulai dari</p>
-                <p className="text-lg font-extrabold text-slate-900">Rp 2.000.000</p>
-              </div>
+              <p className="text-slate-500 mb-8 text-sm leading-relaxed">Pencatatan transaksi keuangan secara rapi dan sesuai standar akuntansi.</p>
             </div>
 
             <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 hover-lift group cursor-default flex flex-col reveal-on-scroll delay-100 relative overflow-hidden">
@@ -518,14 +448,8 @@ export default function App() {
               <div className="w-12 h-12 bg-orange-50 text-[#f97316] rounded-xl flex items-center justify-center mb-6 group-hover:bg-[#f97316] group-hover:text-white transition-colors duration-300 shadow-sm">
                 <FileText size={24} />
               </div>
-              <h3 className="text-xl font-bold mb-3 text-slate-900 font-jakarta group-hover:text-[#f97316] transition-colors">Pelaporan SPT, Konsultasi & Tax Planning</h3>
-              <p className="text-slate-500 mb-8 text-sm leading-relaxed">
-                Pelaporan pajak tepat waktu, diskusi langsung untuk strategi pajak yang efisien.
-              </p>
-              <div className="pt-6 border-t border-slate-100 mt-auto">
-                <p className="text-xs text-slate-400 mb-1 font-medium">Mulai dari</p>
-                <p className="text-lg font-extrabold text-[#f97316]">Rp 500.000</p>
-              </div>
+              <h3 className="text-xl font-bold mb-3 text-slate-900 font-jakarta group-hover:text-[#f97316] transition-colors">Pelaporan SPT & Tax Planning</h3>
+              <p className="text-slate-500 mb-8 text-sm leading-relaxed">Pelaporan pajak tepat waktu, diskusi langsung untuk strategi pajak yang efisien.</p>
             </div>
 
             <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 sm:col-span-2 md:col-span-1 hover-lift group cursor-default flex flex-col reveal-on-scroll delay-200 relative overflow-hidden">
@@ -534,13 +458,7 @@ export default function App() {
                 <Calculator size={24} />
               </div>
               <h3 className="text-xl font-bold mb-3 text-slate-900 font-jakarta group-hover:text-slate-800 transition-colors">Setup ERP & Sistem Keuangan</h3>
-              <p className="text-slate-500 mb-8 text-sm leading-relaxed">
-                Menyusun struktur akun, merancang alur transaksi dan SOP terintegrasi, serta membangun sistem.
-              </p>
-              <div className="pt-6 border-t border-slate-100 mt-auto">
-                <p className="text-xs text-slate-400 mb-1 font-medium">Mulai dari</p>
-                <p className="text-lg font-extrabold text-slate-900">Rp 1.000.000</p>
-              </div>
+              <p className="text-slate-500 mb-8 text-sm leading-relaxed">Menyusun struktur akun, merancang alur transaksi dan SOP terintegrasi, serta membangun sistem.</p>
             </div>
           </div>
         </div>
@@ -548,16 +466,13 @@ export default function App() {
 
       {/* 4. ACADEMY */}
       <section id="kelas" className="py-20 md:py-28 bg-[#0b1120] text-white relative overflow-hidden">
-        {/* Animated Background Blob */}
         <div className="blob bg-[#f97316] w-[500px] h-[500px] top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-20 pointer-events-none mix-blend-screen"></div>
 
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="text-center max-w-2xl mx-auto mb-16 reveal-on-scroll">
             <h4 className="text-[#f97316] font-bold mb-3 uppercase tracking-wider text-xs">ACADEMY</h4>
             <h2 className="text-3xl md:text-4xl font-extrabold mb-4 font-jakarta">Tingkatkan Skill Akuntansi Anda</h2>
-            <p className="text-slate-400 text-sm md:text-base">
-              Program pembelajaran dirancang sistematis, berbasis praktik nyata, dan mudah dipahami untuk kebutuhan kerja maupun bisnis.
-            </p>
+            <p className="text-slate-400 text-sm md:text-base">Program pembelajaran dirancang sistematis, berbasis praktik nyata, dan mudah dipahami.</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6 md:gap-8 max-w-4xl mx-auto">
@@ -569,24 +484,12 @@ export default function App() {
               <h3 className="text-2xl font-bold mb-2 font-jakarta mt-2 text-white">Professional Accounting</h3>
               <p className="text-slate-400 mb-8 text-sm leading-relaxed">Program lengkap untuk siap kerja dan memahami akuntansi secara praktik.</p>
               
-              <div className="mb-8 border-b border-slate-700/50 pb-6">
-                <p className="text-slate-500 line-through text-sm mb-1 decoration-red-500/50">Rp 1.200.000</p>
-                <p className="text-4xl font-extrabold text-[#f97316] font-jakarta">Rp 599.000</p>
-              </div>
-
               <ul className="space-y-4 mb-10 flex-grow">
                 {['Basic Accounting', 'Accounting Plus', 'Pajak Dasar', 'Laporan Keuangan', 'Studi kasus', 'Diskusi & mentoring'].map((item, i) => (
                   <li key={i} className="flex items-center gap-3 text-slate-300 text-sm">
                     <CheckCircle2 size={18} className="text-[#f97316] flex-shrink-0" /> {item}
                   </li>
                 ))}
-                <li className="pt-6">
-                  <span className="font-bold text-white block mb-3 text-sm">Bonus:</span>
-                  <div className="flex flex-wrap gap-2 text-xs text-[#f97316] font-medium">
-                    <span className="bg-[#f97316]/10 border border-[#f97316]/20 px-3 py-1.5 rounded-full">CV Mentoring</span>
-                    <span className="bg-[#f97316]/10 border border-[#f97316]/20 px-3 py-1.5 rounded-full">Mock Interview</span>
-                  </div>
-                </li>
               </ul>
               
               <a 
@@ -603,11 +506,6 @@ export default function App() {
             <div className="bg-[#151f32]/40 backdrop-blur-sm rounded-[2rem] p-8 md:p-10 border border-slate-800 flex flex-col hover:-translate-y-2 transition-transform duration-300 reveal-on-scroll delay-100 group">
               <h3 className="text-2xl font-bold mb-2 font-jakarta mt-2 text-white">Accounting Intensive</h3>
               <p className="text-slate-400 mb-8 text-sm leading-relaxed">Belajar dari nol hingga bisa membuat laporan keuangan.</p>
-              
-              <div className="mb-8 border-b border-slate-800 pb-6">
-                <p className="text-slate-500 line-through text-sm mb-1">Rp 600.000</p>
-                <p className="text-4xl font-extrabold text-white font-jakarta">Rp 299.000</p>
-              </div>
 
               <ul className="space-y-4 mb-10 flex-grow">
                 {['Basic Accounting', 'Accounting Plus', 'Laporan Keuangan', 'Studi kasus', 'Diskusi mentor'].map((item, i) => (
@@ -641,57 +539,22 @@ export default function App() {
               <h2 className="text-3xl font-extrabold text-slate-900 font-jakarta">Momen & Kegiatan Kami</h2>
             </div>
             <div className="flex gap-2">
-              <button 
-                onClick={prevDoc}
-                className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-white hover:bg-[#f97316] hover:border-[#f97316] shadow-sm transition-all duration-300"
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <button 
-                onClick={nextDoc}
-                className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-white hover:bg-[#f97316] hover:border-[#f97316] shadow-sm transition-all duration-300"
-              >
-                <ChevronRight size={20} />
-              </button>
+              <button onClick={prevDoc} className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-white hover:bg-[#f97316] shadow-sm"><ChevronLeft size={20} /></button>
+              <button onClick={nextDoc} className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-white hover:bg-[#f97316] shadow-sm"><ChevronRight size={20} /></button>
             </div>
           </div>
 
           <div className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-6 md:p-10 transition-all duration-300 hover:shadow-[0_8px_40px_rgb(0,0,0,0.08)]">
             <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
-              {/* Gambar 1:1 Kecil dengan Efek Transisi */}
               <div className="w-48 h-48 md:w-56 md:h-56 flex-shrink-0 rounded-[1.5rem] overflow-hidden shadow-lg border-4 border-slate-50 bg-slate-100 relative group">
-                <img 
-                  key={imageKey} // Force re-render for fade animation
-                  src={docs[currentDocIndex]?.img || ''} 
-                  alt={docs[currentDocIndex]?.title || 'Dokumentasi Finensia'} 
-                  className="w-full h-full object-cover fade-image group-hover:scale-110 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-[1.5rem]"></div>
+                <img key={imageKey} src={docs[currentDocIndex]?.img || ''} alt={docs[currentDocIndex]?.title || ''} className="w-full h-full object-cover fade-image group-hover:scale-110 transition-transform duration-700" />
               </div>
-              
-              {/* Deskripsi */}
               <div className="flex-1 text-center md:text-left">
-                <h3 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4 font-jakarta">
-                  {docs[currentDocIndex]?.title || ''}
-                </h3>
-                <p className="text-slate-500 text-sm md:text-base leading-relaxed mb-8">
-                  {docs[currentDocIndex]?.desc || ''}
-                </p>
-                
-                {/* Indikator Slider (Titik-titik) */}
+                <h3 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4 font-jakarta">{docs[currentDocIndex]?.title || ''}</h3>
+                <p className="text-slate-500 text-sm md:text-base leading-relaxed mb-8">{docs[currentDocIndex]?.desc || ''}</p>
                 <div className="flex gap-2 justify-center md:justify-start">
                   {docs.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => {
-                        setCurrentDocIndex(idx);
-                        setImageKey(prev => prev + 1);
-                      }}
-                      className={`h-2 rounded-full transition-all duration-300 ${
-                        idx === currentDocIndex ? "w-8 bg-[#f97316]" : "w-2 bg-slate-200 hover:bg-slate-300"
-                      }`}
-                      aria-label={`Slide ${idx + 1}`}
-                    />
+                    <button key={idx} onClick={() => { setCurrentDocIndex(idx); setImageKey(prev => prev + 1); }} className={`h-2 rounded-full transition-all duration-300 ${idx === currentDocIndex ? "w-8 bg-[#f97316]" : "w-2 bg-slate-200 hover:bg-slate-300"}`} />
                   ))}
                 </div>
               </div>
@@ -707,19 +570,8 @@ export default function App() {
             <PlaySquare size={14} /> PROFIL VIDEO
           </h4>
           <h2 className="text-3xl font-extrabold mb-10 font-jakarta text-slate-900">Lebih Dekat dengan Finensia</h2>
-          
-          <div className="aspect-video w-full rounded-[2rem] overflow-hidden bg-slate-900 shadow-2xl relative border-[6px] border-slate-50 group">
-             <div className="absolute inset-0 bg-[#f97316] opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none"></div>
-             <iframe 
-               width="100%" 
-               height="100%" 
-               src={videoUrl} 
-               title="Video Profil Finensia" 
-               frameBorder="0" 
-               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-               allowFullScreen
-               className="w-full h-full absolute inset-0 rounded-[1.5rem]"
-             ></iframe>
+          <div className="aspect-video w-full rounded-[2rem] overflow-hidden bg-slate-900 shadow-2xl relative border-[6px] border-slate-50">
+             <iframe width="100%" height="100%" src={videoUrl} title="Video Profil Finensia" frameBorder="0" allowFullScreen className="w-full h-full absolute inset-0 rounded-[1.5rem]"></iframe>
           </div>
         </div>
       </section>
@@ -730,9 +582,6 @@ export default function App() {
           <div className="text-center max-w-2xl mx-auto mb-16 reveal-on-scroll">
             <h4 className="text-[#f97316] font-bold mb-3 uppercase tracking-wider text-xs">TESTIMONI</h4>
             <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-4 font-jakarta">Cerita dari Klien Kami</h2>
-            <p className="text-slate-500 text-sm md:text-base">
-              Kepercayaan klien adalah prioritas kami. Finensia telah membantu berbagai pelaku usaha merapikan keuangannya.
-            </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 md:gap-8">
@@ -764,31 +613,18 @@ export default function App() {
 
       {/* 8. TIM PRAKTISI */}
       <section id="tim" className="py-20 md:py-28 bg-[#0b1120] text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#f97316]/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
         <div className="max-w-6xl mx-auto px-6 relative z-10">
           <div className="grid md:grid-cols-2 gap-12 md:gap-20 items-center">
             <div className="reveal-on-scroll">
               <h4 className="text-[#f97316] font-bold mb-3 uppercase tracking-wider text-xs">TIM KAMI</h4>
               <h2 className="text-3xl md:text-4xl font-extrabold mb-6 font-jakarta">Tim Praktisi Ahli.</h2>
-              <p className="text-slate-400 text-sm leading-relaxed mb-8">
-                Di balik Finensia, kami mendedikasikan keahlian untuk membantu pelaku bisnis dan calon akuntan memahami dunia keuangan tanpa rasa takut.
-              </p>
-              <div className="bg-[#151f32]/80 backdrop-blur-sm p-6 rounded-2xl border-l-4 border-[#f97316] shadow-lg">
-                <p className="italic text-slate-300 text-sm leading-relaxed">
-                  &quot;Bagi kami, akuntansi bukan sekadar angka, melainkan sistem yang membantu bisnis bertahan dan berkembang.&quot;
-                </p>
-              </div>
+              <p className="text-slate-400 text-sm leading-relaxed mb-8">Di balik Finensia, kami mendedikasikan keahlian untuk membantu pelaku bisnis dan calon akuntan memahami dunia keuangan.</p>
             </div>
-            
             <div className="grid gap-4">
                {team.map((member, i) => (
-                 <div key={i} className={`flex items-center gap-5 bg-[#151f32]/50 backdrop-blur-sm p-4 rounded-2xl border border-slate-800/50 hover:border-[#f97316]/50 hover:bg-[#151f32] transition-all duration-300 group reveal-on-scroll delay-${(i%3)*100} cursor-default hover:-translate-y-1 shadow-md hover:shadow-orange-900/20`}>
-                   <div className="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center flex-shrink-0 border border-slate-700 text-slate-400 group-hover:bg-[#f97316]/10 group-hover:text-[#f97316] transition-colors overflow-hidden">
-                     {member.img ? (
-                       <img src={member.img} alt={member.name} className="w-full h-full object-cover" />
-                     ) : (
-                       <Users size={20} />
-                     )}
+                 <div key={i} className={`flex items-center gap-5 bg-[#151f32]/50 backdrop-blur-sm p-4 rounded-2xl border border-slate-800/50 hover:border-[#f97316]/50 hover:bg-[#151f32] transition-all duration-300 group reveal-on-scroll delay-${(i%3)*100}`}>
+                   <div className="w-14 h-14 rounded-xl bg-slate-800 flex items-center justify-center flex-shrink-0 border border-slate-700 text-slate-400 overflow-hidden">
+                     {member.img ? <img src={member.img} alt={member.name} className="w-full h-full object-cover" /> : <Users size={20} />}
                    </div>
                    <div>
                      <h4 className="font-bold text-sm md:text-base text-white font-jakarta group-hover:text-[#f97316] transition-colors">{member.name}</h4>
@@ -804,30 +640,17 @@ export default function App() {
       {/* 9. FAQ & FOOTER */}
       <section className="py-20 md:py-28 bg-[#f8fafc]">
         <div className="max-w-3xl mx-auto px-6 reveal-on-scroll">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-extrabold text-slate-900 font-jakarta">Pertanyaan Umum</h2>
-          </div>
-
+          <div className="text-center mb-12"><h2 className="text-3xl font-extrabold text-slate-900 font-jakarta">Pertanyaan Umum</h2></div>
           <div className="space-y-3">
             {faqs.map((faq, index) => (
-              <div 
-                key={index} 
-                className={`bg-white rounded-2xl border transition-all duration-300 overflow-hidden ${activeFAQ === index ? 'border-[#f97316]/30 shadow-md' : 'border-slate-200 hover:border-slate-300'}`}
-              >
-                <button 
-                  className="w-full px-6 py-5 text-left flex justify-between items-center font-bold text-slate-800 text-sm outline-none"
-                  onClick={() => setActiveFAQ(activeFAQ === index ? null : index)}
-                >
+              <div key={index} className={`bg-white rounded-2xl border transition-all duration-300 overflow-hidden ${activeFAQ === index ? 'border-[#f97316]/30 shadow-md' : 'border-slate-200 hover:border-slate-300'}`}>
+                <button className="w-full px-6 py-5 text-left flex justify-between items-center font-bold text-slate-800 text-sm outline-none" onClick={() => setActiveFAQ(activeFAQ === index ? null : index)}>
                   <span className={activeFAQ === index ? 'text-[#f97316]' : ''}>{faq.q}</span>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${activeFAQ === index ? 'bg-[#f97316]/10 text-[#f97316]' : 'bg-slate-50 text-slate-400'}`}>
                     <ChevronDown className={`transition-transform duration-300 ${activeFAQ === index ? "rotate-180" : ""}`} size={18} />
                   </div>
                 </button>
-                <div 
-                  className={`px-6 text-slate-500 text-sm leading-relaxed transition-all duration-300 overflow-hidden ${activeFAQ === index ? 'max-h-40 pb-5 opacity-100' : 'max-h-0 opacity-0'}`}
-                >
-                  {faq.a}
-                </div>
+                <div className={`px-6 text-slate-500 text-sm leading-relaxed transition-all duration-300 overflow-hidden ${activeFAQ === index ? 'max-h-40 pb-5 opacity-100' : 'max-h-0 opacity-0'}`}>{faq.a}</div>
               </div>
             ))}
           </div>
@@ -843,48 +666,25 @@ export default function App() {
                 <img src={siteLogo} alt="Logo Finensia" className="h-8 w-auto object-contain" />
               ) : (
                 <>
-                  <div className="w-8 h-8 bg-gradient-to-br from-[#f97316] to-[#ea580c] rounded-lg flex items-center justify-center shadow-lg">
-                    <TrendingUp className="text-white" size={16} />
-                  </div>
+                  <div className="w-8 h-8 bg-gradient-to-br from-[#f97316] to-[#ea580c] rounded-lg flex items-center justify-center shadow-lg"><TrendingUp className="text-white" size={16} /></div>
                   <span className="text-xl font-bold text-white tracking-tight font-jakarta">Finensia.</span>
                 </>
               )}
             </div>
-            <p className="text-sm leading-relaxed max-w-sm">Solusi akuntansi dan perpajakan terpadu untuk percepatan skala bisnis Anda. Rapi, efisien, dan terstruktur.</p>
+            <p className="text-sm leading-relaxed max-w-sm">Solusi akuntansi dan perpajakan terpadu untuk percepatan skala bisnis Anda.</p>
           </div>
           <div>
             <h4 className="text-white font-bold mb-5 text-sm font-jakarta tracking-wide">Layanan</h4>
             <ul className="space-y-3 text-sm">
               <li><a href="#layanan" className="hover:text-[#f97316] transition-colors flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-slate-600"></span> Pembukuan</a></li>
               <li><a href="#layanan" className="hover:text-[#f97316] transition-colors flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-slate-600"></span> Pajak</a></li>
-              <li><a href="#layanan" className="hover:text-[#f97316] transition-colors flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-slate-600"></span> ERP Setup</a></li>
-              <li><a href="#kelas" className="hover:text-[#f97316] transition-colors flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-slate-600"></span> Academy</a></li>
             </ul>
-          </div>
-          <div>
-             <h4 className="text-white font-bold mb-5 text-sm font-jakarta tracking-wide">Kontak</h4>
-             <ul className="space-y-3 text-sm">
-              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-slate-600"></span> Email: info@finensia.com</li>
-              <li className="flex items-center gap-2"><span className="w-1 h-1 rounded-full bg-slate-600"></span> IG: @finensia.id</li>
-            </ul>
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto px-6 mt-12 pt-8 border-t border-slate-800/50 text-center text-xs text-slate-500 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p>&copy; {new Date().getFullYear()} Finensia. All rights reserved.</p>
-          <div className="flex gap-4">
-            <a href="#/" className="hover:text-white transition-colors">Privacy Policy</a>
-            <a href="#/" className="hover:text-white transition-colors">Terms of Service</a>
           </div>
         </div>
       </footer>
 
       {/* FLOATING WHATSAPP BUTTON */}
-      <a
-        href={waLink}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 bg-[#25D366] text-white p-4 rounded-full shadow-[0_8px_25px_0_rgba(37,211,102,0.4)] hover:scale-110 hover:-translate-y-1 transition-all duration-300 z-50 flex items-center justify-center group"
-      >
+      <a href={waLink} target="_blank" rel="noopener noreferrer" className="fixed bottom-6 right-6 bg-[#25D366] text-white p-4 rounded-full shadow-[0_8px_25px_0_rgba(37,211,102,0.4)] hover:scale-110 hover:-translate-y-1 transition-all duration-300 z-50 flex items-center justify-center group">
         <div className="absolute inset-0 rounded-full bg-white opacity-0 group-hover:opacity-20 transition-opacity"></div>
         <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" viewBox="0 0 16 16" className="relative z-10">
           <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c-.003 1.396.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.59 6.59 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/>
